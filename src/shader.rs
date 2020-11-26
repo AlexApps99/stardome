@@ -78,6 +78,12 @@ impl Program {
         unsafe { gl::Uniform1i(gl::GetUniformLocation(self.0, cstring.as_ptr()), i) }
         Ok(())
     }
+
+    pub fn set_mat4(&self, name: &str, m: glam::Mat4) -> Result<(), std::ffi::NulError> {
+        let cstring = std::ffi::CString::new(name)?;
+        unsafe { gl::UniformMatrix4fv(gl::GetUniformLocation(self.0, cstring.as_ptr()), 1, gl::FALSE, m.to_cols_array().as_ptr()) }
+        Ok(())
+    }
 }
 
 impl Drop for Program {

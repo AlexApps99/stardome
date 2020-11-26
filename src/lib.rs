@@ -14,6 +14,7 @@ pub struct StarDome {
     vao: u32,
     tex1: u32,
     tex2: u32,
+    begin: std::time::Instant,
 }
 
 impl StarDome {
@@ -24,6 +25,7 @@ impl StarDome {
             vao: 0,
             tex1: 0,
             tex2: 0,
+            begin: std::time::Instant::now(),
         }
     }
 
@@ -93,6 +95,8 @@ impl StarDome {
 
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
+        let trans = 0.5 * glam::Mat4::from_rotation_z(self.begin.elapsed().as_secs_f32());
+        self.shader_program.as_ref().unwrap().set_mat4("transform", trans);
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, self.tex1);
@@ -103,6 +107,6 @@ impl StarDome {
             gl::BindVertexArray(self.vao);
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
         }
-        return Ok(std::time::Instant::now() - start);
+        return Ok(start.elapsed());
     }
 }
