@@ -1,10 +1,10 @@
 // TODO clean up and make more like example before continuing
 // DONT HARDCODE VALUES
 // encapsulate behavior
-mod shader;
 mod mesh;
+mod shader;
 mod texture;
-use shader::{Shader, Program};
+use shader::{Program, Shader};
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -31,14 +31,17 @@ impl StarDome {
 
     pub fn setup(&mut self) -> Result<(), BoxError> {
         unsafe {
-            let prog = Program::new(&[&Shader::vertex(include_bytes!("0.vert.glsl"))?, &Shader::frag(include_bytes!("0.frag.glsl"))?])?;
+            let prog = Program::new(&[
+                &Shader::vertex(include_bytes!("0.vert.glsl"))?,
+                &Shader::frag(include_bytes!("0.frag.glsl"))?,
+            ])?;
 
             let vertices: [f32; 32] = [
                 // positions          // colors           // texture coords
-                0.5,  0.5, 0.0,   1.0, 0.0, 0.0,   1.0, 1.0,   // top right
-                0.5, -0.5, 0.0,   0.0, 1.0, 0.0,   1.0, 0.0,   // bottom right
-               -0.5, -0.5, 0.0,   0.0, 0.0, 1.0,   0.0, 0.0,   // bottom left
-               -0.5,  0.5, 0.0,   1.0, 1.0, 0.0,   0.0, 1.0    // top left 
+                0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+                0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+                -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
+                -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
             ];
             let indices: [u32; 6] = [0, 1, 3, 1, 2, 3];
             let mut vbo: u32 = 0;
@@ -66,12 +69,12 @@ impl StarDome {
                 gl::STATIC_DRAW,
             );
 
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 8*4, (0*4) as *const _);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 8 * 4, (0 * 4) as *const _);
             gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 8*4, (3*4) as *const _);
+            gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, 8 * 4, (3 * 4) as *const _);
             gl::EnableVertexAttribArray(1);
 
-            gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, 8*4, (6*4) as *const _);
+            gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, 8 * 4, (6 * 4) as *const _);
             gl::EnableVertexAttribArray(2);
 
             //gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -79,7 +82,8 @@ impl StarDome {
             //gl::BindVertexArray(0);
 
             let tex1 = texture::Texture::load(&mut std::fs::File::open("container.png")?)?.to_gl();
-            let tex2 = texture::Texture::load(&mut std::fs::File::open("awesomeface.png")?)?.to_gl();
+            let tex2 =
+                texture::Texture::load(&mut std::fs::File::open("awesomeface.png")?)?.to_gl();
             prog.r#use();
             prog.set_int("texture1", 0);
             prog.set_int("texture2", 1);
@@ -96,7 +100,10 @@ impl StarDome {
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
         let trans = 0.5 * glam::Mat4::from_rotation_z(self.begin.elapsed().as_secs_f32());
-        self.shader_program.as_ref().unwrap().set_mat4("transform", trans);
+        self.shader_program
+            .as_ref()
+            .unwrap()
+            .set_mat4("transform", trans);
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, self.tex1);

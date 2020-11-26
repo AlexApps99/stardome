@@ -20,7 +20,12 @@ impl Shader {
                 let mut length: i32 = 0;
                 gl::GetShaderInfoLog(id, 1024, &mut length, log.as_mut_ptr());
                 gl::DeleteShader(id);
-                let err = std::str::from_utf8(std::slice::from_raw_parts(log.as_ptr() as *const _, length as _)).unwrap().to_owned();
+                let err = std::str::from_utf8(std::slice::from_raw_parts(
+                    log.as_ptr() as *const _,
+                    length as _,
+                ))
+                .unwrap()
+                .to_owned();
                 Err(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
             }
         }
@@ -61,7 +66,12 @@ impl Program {
                 let mut length: i32 = 0;
                 gl::GetProgramInfoLog(id, 1024, &mut length, log.as_mut_ptr());
                 gl::DeleteProgram(id);
-                let err = std::str::from_utf8(std::slice::from_raw_parts(log.as_ptr() as *const _, length as _)).unwrap().to_owned();
+                let err = std::str::from_utf8(std::slice::from_raw_parts(
+                    log.as_ptr() as *const _,
+                    length as _,
+                ))
+                .unwrap()
+                .to_owned();
                 Err(std::io::Error::new(std::io::ErrorKind::InvalidData, err))
             }
         }
@@ -81,7 +91,14 @@ impl Program {
 
     pub fn set_mat4(&self, name: &str, m: glam::Mat4) -> Result<(), std::ffi::NulError> {
         let cstring = std::ffi::CString::new(name)?;
-        unsafe { gl::UniformMatrix4fv(gl::GetUniformLocation(self.0, cstring.as_ptr()), 1, gl::FALSE, m.to_cols_array().as_ptr()) }
+        unsafe {
+            gl::UniformMatrix4fv(
+                gl::GetUniformLocation(self.0, cstring.as_ptr()),
+                1,
+                gl::FALSE,
+                m.to_cols_array().as_ptr(),
+            )
+        }
         Ok(())
     }
 }
