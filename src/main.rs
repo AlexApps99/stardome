@@ -95,7 +95,8 @@ fn setup_libs() -> Result<
                 gl::TRUE,
             );
         } else {
-            panic!("OpenGL debug could not be enabled");
+            // Problems with renderdoc
+            //panic!("OpenGL debug could not be enabled");
         }
 
         gl::Viewport(0, 0, 960, 540);
