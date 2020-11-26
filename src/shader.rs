@@ -71,6 +71,13 @@ impl Program {
     pub fn r#use(&self) {
         unsafe { gl::UseProgram(self.0) }
     }
+
+    // Errors, mutability?
+    pub fn set_int(&self, name: &str, i: i32) -> Result<(), std::ffi::NulError> {
+        let cstring = std::ffi::CString::new(name)?;
+        unsafe { gl::Uniform1i(gl::GetUniformLocation(self.0, cstring.as_ptr()), i) }
+        Ok(())
+    }
 }
 
 impl Drop for Program {

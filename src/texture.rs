@@ -1,5 +1,6 @@
 //! Textures
 
+// TODO make it not upside down
 /// Texture
 pub struct Texture {
 	/// PNG info

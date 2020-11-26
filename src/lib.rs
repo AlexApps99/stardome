@@ -12,7 +12,8 @@ pub struct StarDome {
     shader_program: Option<Program>,
     ebo: u32,
     vao: u32,
-    tex: u32
+    tex1: u32,
+    tex2: u32,
 }
 
 impl StarDome {
@@ -21,7 +22,8 @@ impl StarDome {
             shader_program: None,
             ebo: 0,
             vao: 0,
-            tex: 0
+            tex1: 0,
+            tex2: 0,
         }
     }
 
@@ -74,12 +76,17 @@ impl StarDome {
 
             //gl::BindVertexArray(0);
 
-            let tex = texture::Texture::load(&mut std::fs::File::open("container.png")?)?.to_gl();
+            let tex1 = texture::Texture::load(&mut std::fs::File::open("container.png")?)?.to_gl();
+            let tex2 = texture::Texture::load(&mut std::fs::File::open("awesomeface.png")?)?.to_gl();
+            prog.r#use();
+            prog.set_int("texture1", 0);
+            prog.set_int("texture2", 1);
 
             self.shader_program = Some(prog);
             self.ebo = ebo;
             self.vao = vao;
-            self.tex = tex;
+            self.tex1 = tex1;
+            self.tex2 = tex2;
         }
         Ok(())
     }
@@ -87,7 +94,10 @@ impl StarDome {
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.tex);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, self.tex1);
+            gl::ActiveTexture(gl::TEXTURE1);
+            gl::BindTexture(gl::TEXTURE_2D, self.tex2);
             //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo);
             self.shader_program.as_ref().unwrap().r#use();
             gl::BindVertexArray(self.vao);
