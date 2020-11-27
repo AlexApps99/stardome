@@ -104,14 +104,13 @@ fn setup_libs() -> Result<
         gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     }
 
-    return Ok((sdl, pump, video, window, ctx));
+    Ok((sdl, pump, video, window, ctx))
 }
 
 fn main() {
     let (sdl, mut pump, video, mut window, ctx) = setup_libs().unwrap();
-    let mut sd = stardome::StarDome::new();
+    let mut sd = stardome::StarDome::new().unwrap();
     window.show();
-    sd.setup().unwrap();
     'main: loop {
         for e in pump.poll_iter() {
             match e {
