@@ -53,6 +53,9 @@ impl Texture {
                 gl::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+            let mut aniso = 0.0;
+            gl::GetFloatv(0x84FF, &mut aniso); // Preferrably use the enums in the future
+            gl::TexParameterf(gl::TEXTURE_2D, 0x84FE, aniso); // It's anisotropy extension
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
