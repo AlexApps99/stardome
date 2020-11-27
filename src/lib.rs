@@ -1,5 +1,3 @@
-// TODO clean up and make more like example before continuing
-// DONT HARDCODE VALUES
 // encapsulate behavior
 mod mesh;
 mod shader;
@@ -56,7 +54,7 @@ impl StarDome {
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                32 * 4,
+                std::mem::size_of_val(&vertices) as isize,
                 vertices.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
@@ -64,7 +62,7 @@ impl StarDome {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                4 * 6,
+                std::mem::size_of_val(&indices) as isize,
                 indices.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
@@ -99,19 +97,30 @@ impl StarDome {
 
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
-        let trans = 0.5 * glam::Mat4::from_rotation_z(self.begin.elapsed().as_secs_f32());
-        self.shader_program
-            .as_ref()
-            .unwrap()
-            .set_mat4("transform", trans);
+        let model = glam::Mat4::from_rotation_x(-55.0_f32.to_radians());
+        let view = glam::Mat4::from_translation(glam::vec3(0.0, 0.0, -3.0));
+        let projection = glam::Mat4::perspective_rh_gl(
+            45.0_f32.to_radians(),
+            16.0/9.0,
+            0.1,
+            100.0
+        );
+
+        if let Some(prog) = self.shader_program.as_ref() {
+            prog.set_mat4("model", model);
+            prog.set_mat4("view", view);
+            prog.set_mat4("projection", projection);
+
+            prog.r#use();
+        }
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, self.tex1);
             gl::ActiveTexture(gl::TEXTURE1);
             gl::BindTexture(gl::TEXTURE_2D, self.tex2);
             //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo);
-            self.shader_program.as_ref().unwrap().r#use();
             gl::BindVertexArray(self.vao);
+            // Hard coding is bad >:(
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
         }
         return Ok(start.elapsed());
