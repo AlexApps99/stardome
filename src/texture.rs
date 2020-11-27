@@ -1,34 +1,46 @@
 //! Textures
 
-// TODO make it not upside down
-// Make it more GL-based
 /// Texture
-pub struct Texture {
-    /// PNG info
-    info: png::OutputInfo,
-    /// PNG data
-    data: Vec<u8>,
-}
+#[repr(transparent)]
+pub struct Texture(u32);
 
 impl Texture {
-    // The region that has been written be checked afterwards
-    // by calling info after a successful call and inspecting the frame_control data.
-    // This requirement may be lifted in a later version of png.
-    //
-    // All samples are in big endian byte order where this matters.
-    /// Load PNG from [std::io::Read]
-    pub fn load<R: std::io::Read>(r: &mut R) -> Result<Self, crate::BoxError> {
-        let (info, mut reader) = png::Decoder::new(r).read_info()?;
-        if Self::check_gl_sized_internal_format(&info.color_type, &info.bit_depth) == 0 {
-            return Err(png::DecodingError::Other("Unsupported format".into()).into());
-        }
-        let mut data = vec![0; info.buffer_size()];
-        reader.next_frame(&mut data)?;
-        Ok(Self { info, data })
+    pub fn open<P>(path: P) -> Result<Self, crate::BoxError>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let i = image::io::Reader::open(path)?.decode()?;
+
+        Self::from_image(i)
     }
 
-    // TODO make this a struct later
-    pub fn to_gl(self) -> u32 {
+    /// Load PNG from [std::io::Read]
+    pub fn load<R: std::io::Read + std::io::Seek>(r: &mut R) -> Result<Self, crate::BoxError> {
+        let i = image::io::Reader::new(std::io::BufReader::new(r))
+            .with_guessed_format()?
+            .decode()?;
+
+        Self::from_image(i)
+    }
+
+    fn from_image(img: image::DynamicImage) -> Result<Self, crate::BoxError> {
+        let i = img.flipv();
+        use image::DynamicImage::*;
+        use std::ffi::c_void;
+        #[rustfmt::skip]
+        let (i_fmt, e_fmt, s, dim, data) = match i {
+            ImageLuma8(img)   => (gl::R8     as i32, gl::RED,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageLumaA8(img)  => (gl::RG8    as i32, gl::RG,   gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageRgb8(img)    => (gl::RGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+        };
+
         unsafe {
             let mut id: u32 = 0;
             gl::GenTextures(1, &mut id);
@@ -44,64 +56,29 @@ impl Texture {
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                self.gl_sized_internal_format(),
-                self.size().0 as i32,
-                self.size().1 as i32,
+                i_fmt,
+                dim.0 as i32,
+                dim.1 as i32,
                 0,
-                self.gl_format(),
-                self.gl_type(),
-                self.data.as_slice().as_ptr() as *const _,
+                e_fmt,
+                gl::UNSIGNED_BYTE,
+                data,
             );
             gl::GenerateMipmap(gl::TEXTURE_2D);
-            id
+            Ok(Self(id))
         }
     }
 
-    /// Get OpenGL format as [i32]
-    pub fn gl_sized_internal_format(&self) -> i32 {
-        Self::check_gl_sized_internal_format(&self.info.color_type, &self.info.bit_depth)
-    }
-
-    pub fn gl_type(&self) -> u32 {
-        gl::UNSIGNED_BYTE
-    }
-
-    pub fn gl_format(&self) -> u32 {
-        use png::ColorType;
-        match self.info.color_type {
-            ColorType::Grayscale => gl::RED,
-            ColorType::RGB => gl::RGB,
-            ColorType::GrayscaleAlpha => gl::RG,
-            ColorType::RGBA => gl::RGBA,
-            _ => 0,
+    pub fn bind(&self, n: u32) {
+        let mut value: i32 = 0;
+        unsafe {
+            gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &mut value);
         }
-    }
-
-    /// Get OpenGL format as [i32]
-	#[rustfmt::skip]
-    fn check_gl_sized_internal_format(color_type: &png::ColorType, bit_depth: &png::BitDepth) -> i32 {
-		use png::{BitDepth, ColorType};
-		match (&color_type, &bit_depth) {
-			(ColorType::Grayscale,      BitDepth::Eight  ) => { gl::R8    as i32 }
-			(ColorType::RGB,            BitDepth::Eight  ) => { gl::RGB8  as i32 }
-			(ColorType::GrayscaleAlpha, BitDepth::Eight  ) => { gl::RG8   as i32 }
-			(ColorType::RGBA,           BitDepth::Eight  ) => { gl::RGBA8 as i32 }
-            _ => 0
-		}
-	}
-
-    /// Get size of image
-    pub fn size(&self) -> (u32, u32) {
-        (self.info.width, self.info.height)
-    }
-
-    /// Get pitch of image
-    pub fn pitch(&self) -> usize {
-        self.info.line_size
-    }
-
-    /// Get image data
-    pub fn data(&self) -> &[u8] {
-        &self.data
+        if n < value as u32 {
+            unsafe {
+                gl::ActiveTexture(gl::TEXTURE0 + n);
+                gl::BindTexture(gl::TEXTURE_2D, self.0);
+            }
+        }
     }
 }

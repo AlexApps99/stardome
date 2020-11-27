@@ -1,4 +1,3 @@
-// encapsulate behavior
 mod mesh;
 mod shader;
 mod texture;
@@ -9,23 +8,23 @@ type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub struct StarDome {
     prog: Program,
     mesh: mesh::Mesh,
-    tex1: u32,
-    tex2: u32,
+    tex1: texture::Texture,
+    tex2: texture::Texture,
     begin: std::time::Instant,
 }
 
 impl StarDome {
     pub fn new() -> Result<Self, BoxError> {
         let sphere = mesh::Mesh::uv_sphere(1.0, 360, 180);
-        let tex1 = texture::Texture::load(&mut std::fs::File::open("warudo.png")?)?.to_gl();
-        let tex2 = texture::Texture::load(&mut std::fs::File::open("awesomeface.png")?)?.to_gl();
+        let tex1 = texture::Texture::open("warudo.png")?;
+        let tex2 = texture::Texture::open("awesomeface.png")?;
         // Keep hold of vertex shader as it will be reused a lot
         let prog = Program::new(&[
             &Shader::vertex(include_bytes!("0.vert.glsl"))?,
             &Shader::frag(include_bytes!("0.frag.glsl"))?,
         ])?;
 
-        prog.r#use();
+        prog.use_gl();
         prog.set_int("texture1", 0)?;
         prog.set_int("texture2", 1)?;
 
@@ -50,15 +49,12 @@ impl StarDome {
         self.prog.set_mat4("model", model)?;
         self.prog.set_mat4("view", view)?;
         self.prog.set_mat4("projection", projection)?;
-        self.prog.r#use();
+        self.prog.use_gl();
 
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, self.tex1);
-            gl::ActiveTexture(gl::TEXTURE1);
-            gl::BindTexture(gl::TEXTURE_2D, self.tex2);
-            self.mesh.draw();
-        }
+        self.tex1.bind(0);
+        self.tex2.bind(1);
+        self.mesh.draw();
+
         Ok(start.elapsed())
     }
 }

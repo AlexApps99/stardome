@@ -77,12 +77,11 @@ impl Program {
         }
     }
 
-    // Bad name, bad mutability
-    pub fn r#use(&self) {
+    pub fn use_gl(&self) {
         unsafe { gl::UseProgram(self.0) }
     }
 
-    // Errors, mutability?
+    // Error checking
     pub fn set_int(&self, name: &str, i: i32) -> Result<(), std::ffi::NulError> {
         let cstring = std::ffi::CString::new(name)?;
         unsafe { gl::Uniform1i(gl::GetUniformLocation(self.0, cstring.as_ptr()), i) }
