@@ -9,9 +9,11 @@ pub struct Mesh {
 use std::f32::consts::{PI, TAU};
 
 impl Mesh {
-    // h_div = latitude lines (sector), v_div = longitude lines (stack)
     // http://www.songho.ca/opengl/gl_sphere.html
-    // Z axis may need to be swapped
+    // A bug is lurking here (segfault at 3, 4, mysterious black screen)
+    // Strangely, the segfault occurs in UseProgram
+    // As well as that, I need to fix the orientation of this
+    // And the index order (for culling)
     pub fn uv_sphere(radius: f32, h_div: u32, v_div: u32) -> Self {
         let v_div = v_div + 1;
         if radius <= 0.0 || h_div < 3 || v_div < 2 {

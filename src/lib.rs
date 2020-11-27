@@ -9,7 +9,6 @@ pub struct StarDome {
     prog: Program,
     mesh: mesh::Mesh,
     tex1: texture::Texture,
-    tex2: texture::Texture,
     begin: std::time::Instant,
 }
 
@@ -17,7 +16,6 @@ impl StarDome {
     pub fn new() -> Result<Self, BoxError> {
         let sphere = mesh::Mesh::uv_sphere(1.0, 360, 180);
         let tex1 = texture::Texture::open("warudo.png")?;
-        let tex2 = texture::Texture::open("awesomeface.png")?;
         // Keep hold of vertex shader as it will be reused a lot
         let prog = Program::new(&[
             &Shader::vertex(include_bytes!("0.vert.glsl"))?,
@@ -26,13 +24,11 @@ impl StarDome {
 
         prog.use_gl();
         prog.set_int("texture1", 0)?;
-        prog.set_int("texture2", 1)?;
 
         Ok(Self {
             prog,
             mesh: sphere,
             tex1,
-            tex2,
             begin: std::time::Instant::now(),
         })
     }
@@ -52,7 +48,6 @@ impl StarDome {
         self.prog.use_gl();
 
         self.tex1.bind(0);
-        self.tex2.bind(1);
         self.mesh.draw();
 
         Ok(start.elapsed())
