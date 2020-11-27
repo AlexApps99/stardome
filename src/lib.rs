@@ -28,20 +28,26 @@ impl StarDome {
     }
 
     pub fn setup(&mut self) -> Result<(), BoxError> {
+        let (vert, indi) = mesh::sphere::sphere(1.0, 180, 360);
+        println!("{}", indi.len());
+
+        let vertices = vert.as_slice();
+        let indices = indi.as_slice();
+
         unsafe {
             let prog = Program::new(&[
                 &Shader::vertex(include_bytes!("0.vert.glsl"))?,
                 &Shader::frag(include_bytes!("0.frag.glsl"))?,
             ])?;
 
-            let vertices: [f32; 32] = [
-                // positions          // colors           // texture coords
-                0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
-                0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
-                -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
-                -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
-            ];
-            let indices: [u32; 6] = [0, 1, 3, 1, 2, 3];
+            //let vertices: [f32; 32] = [
+            //    // positions          // colors           // texture coords
+            //    0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+            //    0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+            //    -0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom left
+            //    -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top left
+            //];
+            //let indices: [u32; 6] = [0, 1, 3, 1, 2, 3];
             let mut vbo: u32 = 0;
             let mut vao: u32 = 0;
             let mut ebo: u32 = 0;
@@ -52,9 +58,10 @@ impl StarDome {
             gl::BindVertexArray(vao);
 
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                std::mem::size_of_val(&vertices) as isize,
+                std::mem::size_of_val(vertices) as isize,
                 vertices.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
@@ -62,7 +69,7 @@ impl StarDome {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                std::mem::size_of_val(&indices) as isize,
+                std::mem::size_of_val(indices) as isize,
                 indices.as_ptr() as *const _,
                 gl::STATIC_DRAW,
             );
@@ -97,14 +104,10 @@ impl StarDome {
 
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
-        let model = glam::Mat4::from_rotation_x(-55.0_f32.to_radians());
+        let model = glam::Mat4::from_rotation_x(self.begin.elapsed().as_secs_f32());
         let view = glam::Mat4::from_translation(glam::vec3(0.0, 0.0, -3.0));
-        let projection = glam::Mat4::perspective_rh_gl(
-            45.0_f32.to_radians(),
-            16.0/9.0,
-            0.1,
-            100.0
-        );
+        let projection =
+            glam::Mat4::perspective_rh_gl(45.0_f32.to_radians(), 16.0 / 9.0, 0.1, 100.0);
 
         if let Some(prog) = self.shader_program.as_ref() {
             prog.set_mat4("model", model);
@@ -121,7 +124,7 @@ impl StarDome {
             //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo);
             gl::BindVertexArray(self.vao);
             // Hard coding is bad >:(
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
+            gl::DrawElements(gl::TRIANGLES, 387720, gl::UNSIGNED_INT, std::ptr::null());
         }
         return Ok(start.elapsed());
     }

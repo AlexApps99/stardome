@@ -100,6 +100,7 @@ fn setup_libs() -> Result<
         }
 
         gl::Viewport(0, 0, 960, 540);
+        gl::Enable(gl::DEPTH_TEST);
         gl::ClearColor(0.2, 0.1, 0.4, 1.0);
     }
 
@@ -127,7 +128,7 @@ fn main() {
             }
         }
 
-        unsafe { gl::Clear(gl::COLOR_BUFFER_BIT) }
+        unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
         sd.frame().unwrap();
         window.gl_swap_window();
     }
