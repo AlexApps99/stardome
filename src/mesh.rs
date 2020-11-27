@@ -41,10 +41,12 @@ impl Mesh {
                 } else {
                     (h_angle / TAU).rem_euclid(1.0)
                 };
-                // Mercator
-                //let t: f32 = nz / 2.0 + 0.5;
-                // Equirectangular
-                let t: f32 = (v_angle / PI + 0.5);
+                let t: f32 = if i == 0 {
+                    1.0
+                } else {
+                    // nz / 2.0 + 0.5 // Mercator
+                    (v_angle / PI + 0.5).rem_euclid(1.0) // Equirectangular
+                };
 
                 vertices.push(x);
                 vertices.push(y);
@@ -79,7 +81,7 @@ impl Mesh {
         unsafe { Self::load_gl(vertices.as_slice(), indices.as_slice()) }
     }
 
-    unsafe fn load_gl(vertices: &[f32], indices: &[u32]) -> Self {
+    pub unsafe fn load_gl(vertices: &[f32], indices: &[u32]) -> Self {
         let mut vbo: u32 = 0;
         let mut vao: u32 = 0; // both needed?
         let mut ebo: u32 = 0;
@@ -113,6 +115,10 @@ impl Mesh {
         gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, 32, 24 as *const _);
         gl::EnableVertexAttribArray(2);
 
+        //gl::BindVertexArray(0);
+        //gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+
         Self {
             vbo,
             vao,
@@ -131,6 +137,7 @@ impl Mesh {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
+            //gl::BindVertexArray(0);
         }
     }
 }

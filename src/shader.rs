@@ -81,6 +81,10 @@ impl Program {
         unsafe { gl::UseProgram(self.0) }
     }
 
+    pub fn unuse_gl(&self) {
+        unsafe { gl::UseProgram(0) }
+    }
+
     // Error checking
     pub fn set_int(&self, name: &str, i: i32) -> Result<(), std::ffi::NulError> {
         let cstring = std::ffi::CString::new(name)?;
