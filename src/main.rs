@@ -101,7 +101,7 @@ fn setup_libs() -> Result<
 
         gl::Viewport(0, 0, 960, 540);
         gl::Enable(gl::DEPTH_TEST);
-        gl::ClearColor(0.2, 0.1, 0.4, 1.0);
+        gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     }
 
     return Ok((sdl, pump, video, window, ctx));

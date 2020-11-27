@@ -86,7 +86,7 @@ impl StarDome {
 
             //gl::BindVertexArray(0);
 
-            let tex1 = texture::Texture::load(&mut std::fs::File::open("container.png")?)?.to_gl();
+            let tex1 = texture::Texture::load(&mut std::fs::File::open("warudo.png")?)?.to_gl();
             let tex2 =
                 texture::Texture::load(&mut std::fs::File::open("awesomeface.png")?)?.to_gl();
             prog.r#use();
@@ -104,7 +104,9 @@ impl StarDome {
 
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
-        let model = glam::Mat4::from_rotation_x(self.begin.elapsed().as_secs_f32());
+        //unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); }
+        let mut model = glam::Mat4::from_rotation_x(-90.0_f32.to_radians());
+        model = model * glam::Mat4::from_rotation_z(-self.begin.elapsed().as_secs_f32());
         let view = glam::Mat4::from_translation(glam::vec3(0.0, 0.0, -3.0));
         let projection =
             glam::Mat4::perspective_rh_gl(45.0_f32.to_radians(), 16.0 / 9.0, 0.1, 100.0);

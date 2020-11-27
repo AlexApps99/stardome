@@ -3,6 +3,7 @@ use std::f32::consts::{PI, TAU};
 // h_div = latitude lines (sector), v_div = longitude lines (stack)
 // http://www.songho.ca/opengl/gl_sphere.html
 // add the comments
+// it's not rotated the right way
 pub fn sphere(radius: f32, h_div: u32, v_div: u32) -> (Vec<f32>, Vec<u32>) {
     let mut vertices: Vec<f32> = Vec::with_capacity(8 * ((h_div + 1) * (v_div + 1)) as usize);
     let mut indices: Vec<u32> = Vec::with_capacity(6 * h_div as usize * (v_div as usize - 1));
@@ -31,8 +32,10 @@ pub fn sphere(radius: f32, h_div: u32, v_div: u32) -> (Vec<f32>, Vec<u32>) {
             vertices.push(ny);
             vertices.push(nz);
 
-            let s: f32 = (j as f32) / (h_div as f32);
-            let t: f32 = (i as f32) / (v_div as f32);
+            //let s: f32 = (j as f32) / (h_div as f32);
+            //let t: f32 = (i as f32) / (v_div as f32);
+            let s: f32 = (h_angle / PI).rem_euclid(1.0);
+            let t: f32 = nz / 2.0 + 0.5;
             vertices.push(s);
             vertices.push(t);
         }
