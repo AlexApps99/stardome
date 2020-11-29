@@ -23,22 +23,28 @@ impl Texture {
         Self::from_image(i)
     }
 
+    fn into_v8(v: Vec<u16>) -> Vec<u8> {
+        // Use into_raw_parts when it's stabilized
+        let mut me = std::mem::ManuallyDrop::new(v);
+        unsafe { Vec::from_raw_parts(me.as_mut_ptr() as *mut u8, me.len(), me.capacity()) }
+    }
+
     fn from_image(img: image::DynamicImage) -> Result<Self, crate::BoxError> {
         let i = img.flipv();
         use image::DynamicImage::*;
         use std::ffi::c_void;
         #[rustfmt::skip]
         let (i_fmt, e_fmt, s, dim, data) = match i {
-            ImageLuma8(img)   => (gl::R8     as i32, gl::RED,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageLumaA8(img)  => (gl::RG8    as i32, gl::RG,   gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageRgb8(img)    => (gl::RGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
-            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), img.into_raw().as_slice().as_ptr() as *const c_void),
+            ImageLuma8(img)   => (gl::R8     as i32, gl::RED,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageLumaA8(img)  => (gl::RG8    as i32, gl::RG,   gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgb8(img)    => (gl::RGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
+            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
+            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
+            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
         };
 
         unsafe {
@@ -54,7 +60,7 @@ impl Texture {
                 0,
                 e_fmt,
                 gl::UNSIGNED_BYTE,
-                data,
+                data.as_slice().as_ptr() as *const c_void,
             );
             gl::GenerateMipmap(gl::TEXTURE_2D);
 
@@ -63,7 +69,7 @@ impl Texture {
             gl::TexParameteri(
                 gl::TEXTURE_2D,
                 gl::TEXTURE_MIN_FILTER,
-                gl::NEAREST as i32,
+                gl::LINEAR_MIPMAP_LINEAR as i32,
             );
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
             let mut aniso = 0.0;

@@ -10,10 +10,6 @@ use std::f32::consts::{PI, TAU};
 
 impl Mesh {
     // http://www.songho.ca/opengl/gl_sphere.html
-    // A bug is lurking here (segfault at 3, 4, mysterious black screen)
-    // Strangely, the segfault occurs in UseProgram
-    // As well as that, I need to fix the orientation of this
-    // And the index order (for culling)
     pub fn uv_sphere(radius: f32, h_div: u32, v_div: u32) -> Self {
         let v_div = v_div + 1;
         if radius <= 0.0 || h_div < 3 || v_div < 2 {
@@ -48,9 +44,9 @@ impl Mesh {
                     (v_angle / PI + 0.5).rem_euclid(1.0) // Equirectangular
                 };
 
-                vertices.push(x);
-                vertices.push(y);
+                vertices.push(-x);
                 vertices.push(z);
+                vertices.push(y);
                 vertices.push(nx);
                 vertices.push(ny);
                 vertices.push(nz);
@@ -83,7 +79,7 @@ impl Mesh {
 
     pub unsafe fn load_gl(vertices: &[f32], indices: &[u32]) -> Self {
         let mut vbo: u32 = 0;
-        let mut vao: u32 = 0; // both needed?
+        let mut vao: u32 = 0;
         let mut ebo: u32 = 0;
         gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1, &mut vbo);
