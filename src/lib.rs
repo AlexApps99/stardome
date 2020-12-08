@@ -16,7 +16,7 @@ impl StarDome {
     pub fn new() -> Result<Self, BoxError> {
         let bsphere = mesh::Mesh::uv_sphere(1.0, 36, 18);
 
-        let tex1 = texture::Texture::open("warudo.png")?;
+        let tex1 = texture::Texture::open("img/gen/earth_albedo.png")?;
         // Keep hold of vertex shader as it will be reused a lot
         let prog = Program::new(&[
             &Shader::vertex(include_bytes!("0.vert.glsl"))?,
