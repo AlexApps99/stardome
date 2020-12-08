@@ -77,6 +77,63 @@ impl Mesh {
         unsafe { Self::load_gl(vertices.as_slice(), indices.as_slice()) }
     }
 
+    // TODO this is a different format (no normals or texture coordinates)
+    // try to make more consistent and flexible
+    pub fn cube() -> Self {
+        let vert: Vec<f32> = vec![
+            -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5,
+            0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
+        ];
+
+        let indi: Vec<u32> = vec![
+            0, 1, 3, 3, 1, 2, 1, 5, 2, 2, 5, 6, 5, 4, 6, 6, 4, 7, 4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2,
+            6, 4, 5, 0, 0, 5, 1,
+        ];
+
+        let vertices = vert.as_slice();
+        let indices = indi.as_slice();
+
+        // TODO WRONG FORMAT FOR `load_gl`
+        unsafe {
+            let mut vbo: u32 = 0;
+            let mut vao: u32 = 0;
+            let mut ebo: u32 = 0;
+            gl::GenVertexArrays(1, &mut vao);
+            gl::GenBuffers(1, &mut vbo);
+            gl::GenBuffers(1, &mut ebo);
+
+            gl::BindVertexArray(vao);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                std::mem::size_of_val(vertices) as isize,
+                vertices.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
+
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                std::mem::size_of_val(indices) as isize,
+                indices.as_ptr() as *const _,
+                gl::STATIC_DRAW,
+            );
+
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 12, std::ptr::null());
+            gl::EnableVertexAttribArray(0);
+
+            Self {
+                vbo,
+                vao,
+                ebo,
+                vertices: vertices.len() as _,
+                indices: indices.len() as _,
+            }
+        }
+    }
+
     pub unsafe fn load_gl(vertices: &[f32], indices: &[u32]) -> Self {
         let mut vbo: u32 = 0;
         let mut vao: u32 = 0;

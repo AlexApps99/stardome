@@ -102,6 +102,7 @@ fn setup_libs() -> Result<
         gl::Viewport(0, 0, 960, 540);
         gl::Enable(gl::DEPTH_TEST);
         gl::Enable(gl::CULL_FACE);
+        gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
         gl::ClearColor(0.0, 0.0, 0.05, 1.0);
     }
 

@@ -126,7 +126,7 @@ impl Cubemap {
     }
 
     fn from_image(img: image::DynamicImage) -> Result<Self, crate::BoxError> {
-        let i = img.flipv();
+        let i = img;
         use image::DynamicImage::*;
         use std::ffi::c_void;
         #[rustfmt::skip]
@@ -198,15 +198,18 @@ impl Cubemap {
         }
     }
 
-    // Try to support glActiveTexture later
-    pub fn bind(&self) {
+    pub fn bind(&self, n: u32) {
+        let mut value: i32 = 0;
         unsafe {
-            gl::BindTexture(gl::TEXTURE_CUBE_MAP, self.0);
+            // Not sure if this applies to cubemaps
+            gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &mut value);
         }
-    }
-
-    pub fn render(&self) {
-        todo!()
+        if n < value as u32 {
+            unsafe {
+                gl::ActiveTexture(gl::TEXTURE0 + n);
+                gl::BindTexture(gl::TEXTURE_CUBE_MAP, self.0);
+            }
+        }
     }
 }
 
