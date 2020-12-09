@@ -58,6 +58,8 @@ fn setup_libs() -> Result<
     attr.set_context_version(3, 3);
     attr.set_context_profile(sdl2::video::GLProfile::Core);
     attr.set_accelerated_visual(true);
+    attr.set_multisample_buffers(1);
+    attr.set_multisample_samples(4);
     attr.set_context_flags().forward_compatible().debug().set();
     let window = video
         .window("Stardome", 960, 540)
@@ -103,6 +105,7 @@ fn setup_libs() -> Result<
         gl::Enable(gl::DEPTH_TEST);
         gl::Enable(gl::CULL_FACE);
         gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
+        gl::Enable(gl::MULTISAMPLE);
         gl::ClearColor(0.0, 0.0, 0.05, 1.0);
     }
 
