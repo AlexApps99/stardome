@@ -1,3 +1,4 @@
+mod camera;
 mod mesh;
 mod shader;
 mod texture;
@@ -12,6 +13,7 @@ pub struct StarDome {
     mesh2: mesh::Mesh,
     tex1: texture::Texture,
     map1: texture::Cubemap,
+    cam: camera::Camera,
     begin: std::time::Instant,
 }
 
@@ -46,17 +48,21 @@ impl StarDome {
             mesh2: cube,
             tex1,
             map1,
+            cam: camera::Camera::new(glam::vec3(0.0, 0.0, -3.0), 0.0, 0.0, 0.0),
             begin: std::time::Instant::now(),
         })
     }
 
     pub fn frame(&mut self) -> Result<std::time::Duration, BoxError> {
         let start = std::time::Instant::now();
+        let elapsed_secs = self.begin.elapsed().as_secs_f32();
         //unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); }
-        let model = glam::Mat4::from_rotation_y(-self.begin.elapsed().as_secs_f32());
-        let mut view = glam::Mat4::from_translation(glam::vec3(0.0, 0.0, -3.0));
-        let projection =
-            glam::Mat4::perspective_rh_gl(120.0_f32.to_radians(), 16.0 / 9.0, 0.1, 100.0);
+        let model = glam::Mat4::from_translation(glam::Vec3::zero())
+            * glam::Mat4::from_rotation_y(-elapsed_secs);
+
+        // Camera parameters
+        let view = self.cam.view_matrix();
+        let projection = self.cam.projection_matrix(16.0 / 9.0);
 
         self.prog1.use_gl();
         self.prog1.set_mat4("model", model)?;
@@ -72,8 +78,7 @@ impl StarDome {
             gl::DepthFunc(gl::LEQUAL);
         }
         self.prog2.use_gl();
-        view = model;
-        self.prog2.set_mat4("view", view)?;
+        self.prog2.set_mat4("view", self.cam.rot_matrix())?;
         self.prog2.set_mat4("projection", projection)?;
         self.map1.bind(0);
         self.mesh2.draw();
