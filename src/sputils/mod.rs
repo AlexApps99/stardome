@@ -1,5 +1,6 @@
 use sofa_sys::*;
 
+pub mod coord;
 pub mod time;
 
 pub fn get_mjd(

@@ -1,4 +1,6 @@
+#![allow(unused_variables, dead_code)]
 mod camera;
+pub mod gfx; // Don't keep pub
 mod mesh;
 mod shader;
 mod sputils;
@@ -29,12 +31,12 @@ impl StarDome {
         let map1 = texture::Cubemap::open("img/gen/milky_way.png")?;
         // Keep hold of vertex shader as it will be reused a lot
         let prog1 = Program::new(&[
-            &Shader::vertex(include_bytes!("0.vert.glsl"))?,
-            &Shader::frag(include_bytes!("0.frag.glsl"))?,
+            &Shader::vertex(include_bytes!("glsl/planet.vert.glsl"))?,
+            &Shader::frag(include_bytes!("glsl/planet.frag.glsl"))?,
         ])?;
         let prog2 = Program::new(&[
-            &Shader::vertex(include_bytes!("box.vert.glsl"))?,
-            &Shader::frag(include_bytes!("box.frag.glsl"))?,
+            &Shader::vertex(include_bytes!("glsl/box.vert.glsl"))?,
+            &Shader::frag(include_bytes!("glsl/box.frag.glsl"))?,
         ])?;
 
         prog1.use_gl();
