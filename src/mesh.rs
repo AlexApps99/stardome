@@ -27,8 +27,8 @@ impl Mesh {
             let nz: f32 = v_angle.sin();
             for j in 0..=h_div {
                 let h_angle: f32 = (j as f32) * h_step;
-                let nx: f32 = nxy * h_angle.cos();
-                let ny: f32 = nxy * h_angle.sin();
+                let nx: f32 = nxy * -h_angle.cos();
+                let ny: f32 = nxy * -h_angle.sin();
                 let x: f32 = nx * radius;
                 let y: f32 = ny * radius;
                 let z: f32 = nz * radius;
@@ -44,9 +44,9 @@ impl Mesh {
                     (v_angle / PI + 0.5).rem_euclid(1.0) // Equirectangular
                 };
 
-                vertices.push(-x);
-                vertices.push(z);
+                vertices.push(x);
                 vertices.push(y);
+                vertices.push(z);
                 vertices.push(nx);
                 vertices.push(ny);
                 vertices.push(nz);
