@@ -1,197 +1,109 @@
-// TODO find a way to handle multiple concurrent instances?
-// This is not a near-future issue to solve, though
-pub struct GraphicsLibs {
-    pub sdl: sdl2::Sdl,
-    pub pump: sdl2::EventPump,
-    pub video: sdl2::VideoSubsystem,
-    pub window: sdl2::video::Window,
-    pub ctx: sdl2::video::GLContext,
-    #[cfg(feature = "gui")]
-    pub imgui: imgui::Context,
-    #[cfg(feature = "gui")]
-    pub imgui_sdl: imgui_sdl2::ImguiSdl2,
-    #[cfg(feature = "gui")]
-    pub imgui_gl: imgui_opengl_renderer::Renderer,
+pub mod camera;
+pub mod libs;
+pub mod mesh;
+pub mod shader;
+pub mod texture;
+
+pub struct Graphics {
+    pub libs: libs::GraphicsLibs,
+    pub progs: Vec<shader::Program>,
+    pub meshes: Vec<mesh::Mesh>,
+    pub textures: Vec<texture::Texture>,
+    pub cubemap: texture::Cubemap,
 }
 
-impl GraphicsLibs {
-    pub fn load() -> Result<Self, crate::BoxError> {
-        let sdl = sdl2::init()?;
-        let pump = sdl.event_pump()?;
-        let video = sdl.video()?;
-        let attr = video.gl_attr();
-        attr.set_context_version(3, 3);
-        attr.set_context_profile(sdl2::video::GLProfile::Core);
-        attr.set_accelerated_visual(true);
-        attr.set_multisample_buffers(1);
-        attr.set_multisample_samples(4);
-        attr.set_context_flags().forward_compatible().debug().set();
-        let window = video
-            .window("Stardome", 960, 540)
-            .resizable()
-            .opengl()
-            .position_centered()
-            .hidden()
-            .build()?;
-
-        let ctx = window.gl_create_context()?;
-
-        if video
-            .gl_set_swap_interval(sdl2::video::SwapInterval::LateSwapTearing)
-            .is_err()
-        {
-            video.gl_set_swap_interval(sdl2::video::SwapInterval::VSync)?;
-        }
-
-        gl::load_with(|s| video.gl_get_proc_address(s) as *const _);
-        unsafe {
-            let mut flags: i32 = 0;
-            gl::GetIntegerv(gl::CONTEXT_FLAGS, &mut flags);
-            // TODO check extension is loaded
-            if ((flags & gl::CONTEXT_FLAG_DEBUG_BIT as i32) != 0)
-                && gl::DebugMessageCallback::is_loaded()
-            {
-                gl::Enable(gl::DEBUG_OUTPUT);
-                gl::DebugMessageCallback(Some(gl_debug_message_callback), std::ptr::null());
-                gl::DebugMessageControl(
-                    gl::DONT_CARE,
-                    gl::DONT_CARE,
-                    gl::DONT_CARE,
-                    0,
-                    std::ptr::null(),
-                    gl::TRUE,
-                );
-            } else {
-                // Problems with renderdoc
-                //panic!("OpenGL debug could not be enabled");
-            }
-
-            gl::Viewport(0, 0, 960, 540);
-            gl::Enable(gl::DEPTH_TEST);
-            //gl::Enable(gl::CULL_FACE);
-            gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
-            gl::Enable(gl::MULTISAMPLE);
-            gl::ClearColor(0.0, 0.0, 0.05, 1.0);
-        }
-
-        let mut imgui = imgui::Context::create();
-        imgui.set_ini_filename(None);
-        let imgui_sdl = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
-        let mut imgui_gl =
-            imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
+impl Graphics {
+    pub fn new() -> Result<Self, crate::BoxError> {
+        use shader::{Program, Shader};
+        let libs = libs::GraphicsLibs::load()?;
+        let meshes = vec![mesh::Mesh::uv_sphere(1.0, 36, 18), mesh::Mesh::cube()];
+        let textures = vec![
+            texture::Texture::open("img/gen/earth_albedo.png")?,
+            texture::Texture::open("img/gen/earth_bathymetry.png")?,
+        ];
+        let cubemap = texture::Cubemap::open("img/gen/milky_way.png")?;
+        let progs = vec![
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/planet.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/planet.frag.glsl"))?,
+            ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/box.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/box.frag.glsl"))?,
+            ])?,
+        ];
+        progs[0].use_gl();
+        progs[0].set_int("texture1", 0)?;
+        progs[0].set_int("texture2", 1)?;
+        progs[0].unuse_gl();
+        progs[1].use_gl();
+        progs[1].set_int("skybox", 0)?;
+        progs[1].unuse_gl();
 
         Ok(Self {
-            sdl,
-            pump,
-            video,
-            window,
-            ctx,
-            #[cfg(feature = "gui")]
-            imgui,
-            #[cfg(feature = "gui")]
-            imgui_sdl,
-            #[cfg(feature = "gui")]
-            imgui_gl,
+            libs,
+            progs,
+            meshes,
+            textures,
+            cubemap,
         })
     }
 
-    // Probably doesn't go here oh well
-    pub fn handle_event_loop(&mut self) -> bool {
-        use sdl2::event::{Event, WindowEvent};
-        for e in self.pump.poll_iter() {
-            self.imgui_sdl.handle_event(&mut self.imgui, &e);
-            if self.imgui_sdl.ignore_event(&e) {
-                continue;
-            }
-            GraphicsLibs::handle_event(&e);
-            match e {
-                Event::Quit { timestamp: _ } => return false,
-                Event::Window {
-                    timestamp: _,
-                    window_id: _,
-                    win_event,
-                } => match win_event {
-                    WindowEvent::SizeChanged(x, y) => (),
-                    _ => (),
-                },
-                _ => (),
-            }
-        }
-        self.imgui_sdl
-            .prepare_frame(self.imgui.io_mut(), &self.window, &self.pump.mouse_state());
-        self.imgui.io_mut().delta_time = 0.016;
-        let ui = self.imgui.frame();
-        ui.show_demo_window(&mut true);
-        self.imgui_sdl.prepare_render(&ui, &self.window);
-        self.imgui_gl.render(ui);
-        true
-    }
+    pub fn frame(
+        &mut self,
+        cam: &camera::Camera,
+        elapsed_secs: f32,
+    ) -> Result<(), crate::BoxError> {
+        let tw = elapsed_secs as f64 * 0.1;
+        //unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); }
+        let (djmjd0, tt, date, tut) =
+            crate::sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
+        let tf = crate::sputils::gcrs_to_itrs(
+            djmjd0,
+            tt + tw,
+            date,
+            tut + tw,
+            0.093343 * sofa_sys::DAS2R,
+            0.289699 * sofa_sys::DAS2R,
+            0.115 * sofa_sys::DMAS2R,
+            0.153 * sofa_sys::DMAS2R,
+        );
+        // INVERSE
+        let model = tf * glam::Mat4::from_scale(glam::Vec3::splat(sgp4::WGS84.ae as f32));
 
-    // Should be run in event pump iter loop, but not exclusively
-    // That way other code can use events
-    pub fn handle_event(event: &sdl2::event::Event) {
-        if let sdl2::event::Event::Window {
-            timestamp: _,
-            window_id: _,
-            win_event,
-        } = event
-        {
-            if let sdl2::event::WindowEvent::SizeChanged(x, y) = win_event {
-                unsafe { gl::Viewport(0, 0, x.clone(), y.clone()) }
-                // Get the camera updated here
-                // Unless it will be handled by another function in the iter loop
-            }
-        }
-    }
+        // Camera parameters
+        let view = cam.view_matrix();
+        let projection = cam.projection_matrix(self.libs.aspect_ratio());
 
-    // Same idea as above
-    pub fn handle_frame(&mut self) {
-        self.window.gl_swap_window();
-        unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
+        self.progs[0].use_gl();
+        self.progs[0].set_mat4("model", model)?;
+        self.progs[0].set_mat4("view", view)?;
+        self.progs[0].set_mat4("projection", projection)?;
+
+        self.textures[0].bind(0);
+        self.textures[1].bind(1);
+        self.meshes[0].draw();
+        self.progs[0].unuse_gl();
+
+        // Cubemap
+        unsafe {
+            gl::DepthFunc(gl::LEQUAL);
+        }
+        self.progs[1].use_gl();
+        self.progs[1].set_mat4("view", cam.rot_matrix())?;
+        self.progs[1].set_mat4("projection", projection)?;
+        self.cubemap.bind(0);
+        self.meshes[1].draw();
+        unsafe {
+            gl::DepthFunc(gl::LESS);
+        }
+
+        Ok(())
     }
 }
 
-impl Drop for GraphicsLibs {
+impl Drop for Graphics {
     fn drop(&mut self) {
-        // TODO pack up properly, in correct order
+        // TODO
     }
-}
-
-// As this will be a "library" in a sense, using log! is more smart
-extern "system" fn gl_debug_message_callback(
-    source: u32,
-    t: u32,
-    id: u32,
-    severity: u32,
-    _length: i32,
-    message: *const i8,
-    _user_param: *mut std::ffi::c_void,
-) {
-    let src = match source {
-        gl::DEBUG_SOURCE_API => "API",
-        gl::DEBUG_SOURCE_WINDOW_SYSTEM => "Window System",
-        gl::DEBUG_SOURCE_SHADER_COMPILER => "Shader Compiler",
-        gl::DEBUG_SOURCE_THIRD_PARTY => "Third-party",
-        gl::DEBUG_SOURCE_APPLICATION => "Application",
-        _ => "Other",
-    };
-
-    let ty = match t {
-        gl::DEBUG_TYPE_ERROR => "Error",
-        gl::DEBUG_TYPE_DEPRECATED_BEHAVIOR => "Deprecated behavior",
-        gl::DEBUG_TYPE_UNDEFINED_BEHAVIOR => "Undefined behavior",
-        gl::DEBUG_TYPE_PORTABILITY => "Portability",
-        gl::DEBUG_TYPE_PERFORMANCE => "Performance",
-        gl::DEBUG_TYPE_MARKER => "Marker",
-        gl::DEBUG_TYPE_PUSH_GROUP => "Push group",
-        gl::DEBUG_TYPE_POP_GROUP => "Pop group",
-        _ => "Other",
-    };
-
-    let msg = unsafe {
-        std::ffi::CStr::from_ptr(message)
-            .to_str()
-            .unwrap_or_default()
-    };
-    eprintln!("OpenGL {} {}: `{}`", src, ty, msg);
 }
