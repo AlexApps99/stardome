@@ -1,5 +1,11 @@
 //! Textures
 
+fn into_v8(v: Vec<u16>) -> Vec<u8> {
+    // Use into_raw_parts when it's stabilized
+    let mut me = std::mem::ManuallyDrop::new(v);
+    unsafe { Vec::from_raw_parts(me.as_mut_ptr() as *mut u8, me.len(), me.capacity()) }
+}
+
 /// Texture
 #[repr(transparent)]
 pub struct Texture(u32);
@@ -11,7 +17,7 @@ impl Texture {
     {
         let i = image::io::Reader::open(path)?.decode()?;
 
-        Self::from_image(i)
+        Ok(Self::from_image(i))
     }
 
     /// Load PNG from [std::io::Read]
@@ -20,16 +26,10 @@ impl Texture {
             .with_guessed_format()?
             .decode()?;
 
-        Self::from_image(i)
+        Ok(Self::from_image(i))
     }
 
-    fn into_v8(v: Vec<u16>) -> Vec<u8> {
-        // Use into_raw_parts when it's stabilized
-        let mut me = std::mem::ManuallyDrop::new(v);
-        unsafe { Vec::from_raw_parts(me.as_mut_ptr() as *mut u8, me.len(), me.capacity()) }
-    }
-
-    fn from_image(img: image::DynamicImage) -> Result<Self, crate::BoxError> {
+    fn from_image(img: image::DynamicImage) -> Self {
         let i = img.flipv();
         use image::DynamicImage::*;
         use std::ffi::c_void;
@@ -41,10 +41,10 @@ impl Texture {
             ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
+            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
         };
 
         unsafe {
@@ -77,7 +77,7 @@ impl Texture {
             gl::TexParameterf(gl::TEXTURE_2D, 0x84FE, aniso); // It's anisotropy extension
 
             gl::BindTexture(gl::TEXTURE_2D, 0);
-            Ok(Self(id))
+            Self(id)
         }
     }
 
@@ -107,7 +107,7 @@ impl Cubemap {
     {
         let i = image::io::Reader::open(path)?.decode()?;
 
-        Self::from_image(i)
+        Ok(Self::from_image(i))
     }
 
     /// Load PNG from [std::io::Read]
@@ -116,16 +116,10 @@ impl Cubemap {
             .with_guessed_format()?
             .decode()?;
 
-        Self::from_image(i)
+        Ok(Self::from_image(i))
     }
 
-    fn into_v8(v: Vec<u16>) -> Vec<u8> {
-        // Use into_raw_parts when it's stabilized
-        let mut me = std::mem::ManuallyDrop::new(v);
-        unsafe { Vec::from_raw_parts(me.as_mut_ptr() as *mut u8, me.len(), me.capacity()) }
-    }
-
-    fn from_image(img: image::DynamicImage) -> Result<Self, crate::BoxError> {
+    fn from_image(img: image::DynamicImage) -> Self {
         let i = img;
         use image::DynamicImage::*;
         use std::ffi::c_void;
@@ -137,10 +131,10 @@ impl Cubemap {
             ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
-            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), Self::into_v8(img.into_raw())),
+            ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageLumaA16(img) => (gl::RG16   as i32, gl::RG,   gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageRgb16(img)   => (gl::RGB16  as i32, gl::RGB,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
+            ImageRgba16(img)  => (gl::RGBA16 as i32, gl::RGBA, gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
         };
 
         unsafe {
@@ -194,7 +188,7 @@ impl Cubemap {
             gl::TexParameterf(gl::TEXTURE_CUBE_MAP, 0x84FE, aniso); // It's anisotropy extension
 
             gl::BindTexture(gl::TEXTURE_CUBE_MAP, 0);
-            Ok(Self(id))
+            Self(id)
         }
     }
 

@@ -11,9 +11,6 @@ repository  = "https://github.com/AlexApps99/stardome"
 [dependencies.gl]
 version     = "0.14.0"
 
-[dependencies.glam]
-version     = "0.11.2"
-
 [dependencies.image]
 version     = "0.23.12"
 default-features = false
@@ -27,6 +24,9 @@ version     = "0.10.0"
 
 [dependencies.imgui-sdl2]
 version     = "0.13.0"
+
+[dependencies.nalgebra]
+version     = "0.23.1"
 
 [dependencies.sdl2]
 version     = "0.34.3"

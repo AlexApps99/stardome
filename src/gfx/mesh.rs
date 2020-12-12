@@ -13,7 +13,7 @@ use std::f32::consts::{PI, TAU};
 // And easy use of cubemap
 impl Mesh {
     // http://www.songho.ca/opengl/gl_sphere.html
-    // I need to go back over this and fix whatever bugs I've made
+    #[allow(clippy::many_single_char_names)]
     pub fn uv_sphere(radius: f32, h_div: u32, v_div: u32) -> Self {
         let v_div = v_div + 1;
         if radius <= 0.0 || h_div < 3 || v_div < 2 {

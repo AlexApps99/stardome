@@ -1,4 +1,5 @@
 #![allow(unused_variables, dead_code)]
+extern crate nalgebra as na;
 pub mod gfx; // Don't keep pub
 mod sputils;
 
@@ -15,7 +16,7 @@ impl StarDome {
         let mut s = Self {
             graphics: gfx::Graphics::new()?,
             cam: gfx::camera::Camera::new(
-                glam::vec3(20000.0, 0.0, 0.0),
+                na::Vector3::new(20000.0, 0.0, 0.0),
                 90.0_f32.to_radians(),
                 0.0_f32.to_radians(),
                 90.0_f32.to_radians(),

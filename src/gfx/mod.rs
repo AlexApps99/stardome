@@ -69,16 +69,16 @@ impl Graphics {
             0.153 * sofa_sys::DMAS2R,
         );
         // INVERSE
-        let model = tf * glam::Mat4::from_scale(glam::Vec3::splat(sgp4::WGS84.ae as f32));
+        let model: na::Matrix4<f32> = na::convert(tf * na::Matrix4::new_scaling(sgp4::WGS84.ae));
 
         // Camera parameters
         let view = cam.view_matrix();
         let projection = cam.projection_matrix(self.libs.aspect_ratio());
 
         self.progs[0].use_gl();
-        self.progs[0].set_mat4("model", model)?;
-        self.progs[0].set_mat4("view", view)?;
-        self.progs[0].set_mat4("projection", projection)?;
+        self.progs[0].set_mat4("model", &model)?;
+        self.progs[0].set_mat4("view", &view)?;
+        self.progs[0].set_mat4("projection", &projection)?;
 
         self.textures[0].bind(0);
         self.textures[1].bind(1);
@@ -90,8 +90,8 @@ impl Graphics {
             gl::DepthFunc(gl::LEQUAL);
         }
         self.progs[1].use_gl();
-        self.progs[1].set_mat4("view", cam.rot_matrix())?;
-        self.progs[1].set_mat4("projection", projection)?;
+        self.progs[1].set_mat4("view", &cam.rot_matrix())?;
+        self.progs[1].set_mat4("projection", &projection)?;
         self.cubemap.bind(0);
         self.meshes[1].draw();
         unsafe {

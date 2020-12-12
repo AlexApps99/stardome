@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy)]
 pub enum TimeError {
-    UnacceptableDate
+    UnacceptableDate,
 }
 
 impl std::error::Error for TimeError {}
@@ -31,6 +31,7 @@ impl UTC {
         }
     }
 
+    #[allow(non_snake_case)]
     pub fn from_ymdhms(y: i32, m: i32, d: i32, H: i32, M: i32, S: f64) -> Option<Self> {
         Self::from_ymdf(y, m, d, unsafe {
             let mut d: f64 = 0.0;

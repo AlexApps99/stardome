@@ -131,7 +131,7 @@ impl GraphicsLibs {
         } = event
         {
             if let sdl2::event::WindowEvent::SizeChanged(x, y) = win_event {
-                unsafe { gl::Viewport(0, 0, x.clone(), y.clone()) }
+                unsafe { gl::Viewport(0, 0, *x, *y) }
                 // Get the camera updated here
                 // Unless it will be handled by another function in the iter loop
             }

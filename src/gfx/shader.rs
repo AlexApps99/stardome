@@ -92,14 +92,14 @@ impl Program {
         Ok(())
     }
 
-    pub fn set_mat4(&self, name: &str, m: glam::Mat4) -> Result<(), std::ffi::NulError> {
+    pub fn set_mat4(&self, name: &str, m: &na::Matrix4<f32>) -> Result<(), std::ffi::NulError> {
         let cstring = std::ffi::CString::new(name)?;
         unsafe {
             gl::UniformMatrix4fv(
                 gl::GetUniformLocation(self.0, cstring.as_ptr()),
                 1,
                 gl::FALSE,
-                m.to_cols_array().as_ptr(),
+                m.as_slice().as_ptr(),
             )
         }
         Ok(())

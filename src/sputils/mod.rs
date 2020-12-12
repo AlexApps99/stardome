@@ -43,7 +43,7 @@ pub fn gcrs_to_itrs(
     yp: f64,
     dx06: f64,
     dy06: f64,
-) -> glam::Mat4 {
+) -> na::Matrix4<f64> {
     unsafe {
         let mut rc2ti: [[f64; 3]; 3] = [[0.0; 3]; 3];
         let mut rpom: [[f64; 3]; 3] = [[0.0; 3]; 3];
@@ -79,18 +79,19 @@ pub fn gcrs_to_itrs(
 
         // Form celestial-terrestrial matrix (including polar motion)
         iauRxr(rpom.as_mut_ptr(), rc2ti.as_mut_ptr(), rc2it.as_mut_ptr());
-        glam::Mat4::from_cols_array(&[
-            rc2it[0][0] as f32,
-            rc2it[0][1] as f32,
-            rc2it[0][2] as f32,
+        // Probably more efficient ways to achieve this
+        na::Matrix4::from_column_slice(&[
+            rc2it[0][0],
+            rc2it[0][1],
+            rc2it[0][2],
             0.0,
-            rc2it[1][0] as f32,
-            rc2it[1][1] as f32,
-            rc2it[1][2] as f32,
+            rc2it[1][0],
+            rc2it[1][1],
+            rc2it[1][2],
             0.0,
-            rc2it[2][0] as f32,
-            rc2it[2][1] as f32,
-            rc2it[2][2] as f32,
+            rc2it[2][0],
+            rc2it[2][1],
+            rc2it[2][2],
             0.0,
             0.0,
             0.0,
