@@ -42,6 +42,18 @@ impl UTC {
             }
         })
     }
+
+    pub fn from_system_time(time: std::time::SystemTime) -> Option<Self> {
+        let t = if let Ok(t) = time.duration_since(std::time::SystemTime::UNIX_EPOCH) {
+            t.as_secs_f64()
+        } else if let Ok(t) = std::time::SystemTime::UNIX_EPOCH.duration_since(time) {
+            -t.as_secs_f64()
+        } else {
+            return None; // Unreachable, as far as I know
+        } / DAYSEC;
+
+        Some(UTC(240000.5, t + 40587.0))
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -73,16 +85,23 @@ impl From<TAI> for TT {
     }
 }
 
-//impl From<TAI> for UT1 {
-//    fn from(tai: TAI) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauTaiut1(tai.0, tai.1, dta, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl UT1 {
+    pub fn from_tai(tai: TAI, dta: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauTaiut1(tai.0, tai.1, dta, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
+
+impl TAI {
+    #[inline(always)]
+    pub fn into_ut1(self, dta: f64) -> UT1 {
+        UT1::from_tai(self, dta)
+    }
+}
 
 impl TryFrom<TAI> for UTC {
     type Error = TimeError;
@@ -132,16 +151,23 @@ impl From<TDB> for TCB {
     }
 }
 
-//impl From<TDB> for TT {
-//    fn from(tdb: TDB) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauTdbtt(tdb.0, tdb.1, dtr, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl TT {
+    pub fn from_tdb(tdb: TDB, dtr: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauTdbtt(tdb.0, tdb.1, dtr, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
+
+impl TDB {
+    #[inline(always)]
+    pub fn into_tt(self, dtr: f64) -> TT {
+        TT::from_tdb(self, dtr)
+    }
+}
 
 impl From<TT> for TAI {
     fn from(tt: TT) -> Self {
@@ -165,63 +191,98 @@ impl From<TT> for TCG {
     }
 }
 
-//impl From<TT> for TDB {
-//    fn from(tt: TT) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauTttdb(tt.0, tt.1, dtr, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl TDB {
+    pub fn from_tt(tt: TT, dtr: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauTttdb(tt.0, tt.1, dtr, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
 
-//impl From<TT> for UT1 {
-//    fn from(tt: TT) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauTtut1(tt.0, tt.1, dt, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl TT {
+    #[inline(always)]
+    pub fn into_tdb(self, dtr: f64) -> TDB {
+        TDB::from_tt(self, dtr)
+    }
+}
 
-//impl From<UT1> for TAI {
-//    fn from(ut1: UT1) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauUt1tai(ut1.0, ut1.1, dta, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl UT1 {
+    pub fn from_tt(tt: TT, dt: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauTtut1(tt.0, tt.1, dt, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
 
-//impl From<UT1> for TT {
-//    fn from(ut1: UT1) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            iauUt1tt(ut1.0, ut1.1, dt, &mut a, &mut b);
-//            Self(a, b)
-//        }
-//    }
-//}
+impl TT {
+    #[inline(always)]
+    pub fn into_ut1(self, dt: f64) -> UT1 {
+        UT1::from_tt(self, dt)
+    }
+}
 
-//impl From<UT1> for UTC {
-//    fn from(ut1: UT1) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            if iauUt1utc(ut1.0, ut1.1, dut1, &mut a, &mut b) < 0 {
-//                Self(0.0, 0.0) // Error has occured
-//            } else {
-//                Self(a, b)
-//            }
-//        }
-//    }
-//}
+impl TAI {
+    pub fn from_ut1(ut1: UT1, dta: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauUt1tai(ut1.0, ut1.1, dta, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
+
+impl UT1 {
+    #[inline(always)]
+    pub fn into_tai(self, dta: f64) -> TAI {
+        TAI::from_ut1(self, dta)
+    }
+}
+
+impl TT {
+    pub fn from_ut1(ut1: UT1, dt: f64) -> Self {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            iauUt1tt(ut1.0, ut1.1, dt, &mut a, &mut b);
+            Self(a, b)
+        }
+    }
+}
+
+impl UT1 {
+    #[inline(always)]
+    pub fn into_tt(self, dt: f64) -> TT {
+        TT::from_ut1(self, dt)
+    }
+}
+
+impl UTC {
+    pub fn try_from_ut1(ut1: UT1, dut1: f64) -> Result<Self, TimeError> {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            if iauUt1utc(ut1.0, ut1.1, dut1, &mut a, &mut b) < 0 {
+                Err(TimeError::UnacceptableDate)
+            } else {
+                Ok(Self(a, b))
+            }
+        }
+    }
+}
+
+impl UT1 {
+    #[inline(always)]
+    pub fn try_into_utc(self, dut1: f64) -> Result<UTC, TimeError> {
+        UTC::try_from_ut1(self, dut1)
+    }
+}
 
 impl TryFrom<UTC> for TAI {
     type Error = TimeError;
@@ -238,16 +299,23 @@ impl TryFrom<UTC> for TAI {
     }
 }
 
-//impl From<UTC> for UT1 {
-//    fn from(utc: UTC) -> Self {
-//        unsafe {
-//            let mut a: f64 = 0.0;
-//            let mut b: f64 = 0.0;
-//            if iauUtcut1(utc.0, utc.1, dut1, &mut a, &mut b) < 0 {
-//                Self(0.0, 0.0) // Error has occured
-//            } else {
-//                Self(a, b)
-//            }
-//        }
-//    }
-//}
+impl UT1 {
+    pub fn try_from_utc(utc: UTC, dut1: f64) -> Result<Self, TimeError> {
+        unsafe {
+            let mut a: f64 = 0.0;
+            let mut b: f64 = 0.0;
+            if iauUtcut1(utc.0, utc.1, dut1, &mut a, &mut b) < 0 {
+                Err(TimeError::UnacceptableDate)
+            } else {
+                Ok(Self(a, b))
+            }
+        }
+    }
+}
+
+impl UTC {
+    #[inline(always)]
+    pub fn try_into_ut1(self, dut1: f64) -> Result<UT1, TimeError> {
+        UT1::try_from_utc(self, dut1)
+    }
+}
