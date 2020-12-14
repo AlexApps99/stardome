@@ -14,8 +14,25 @@ impl std::fmt::Display for TimeError {
     }
 }
 
+// TODO test
+fn fmt_jd(f: &mut std::fmt::Formatter, a: f64, b: f64, n: &str) -> std::fmt::Result {
+    unsafe {
+        let mut y: i32 = 0;
+        let mut m: i32 = 0;
+        let mut d: i32 = 0;
+        let mut fd: f64 = 0.0;
+        if iauJd2cal(a, b, &mut y, &mut m, &mut d, &mut fd) >= 0 {
+            let mut hmsf: [i32; 4] = [0; 4];
+            iauD2tf(3, fd, std::ptr::null_mut(), hmsf.as_mut_ptr());
+            write!(f, "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}", y, m, d, hmsf[0], hmsf[1], hmsf[2], hmsf[3])
+        } else {
+            Err(std::fmt::Error)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
-pub struct UTC(f64, f64);
+pub struct UTC(pub f64, pub f64);
 
 impl UTC {
     pub fn from_ymdf(y: i32, m: i32, d: i32, f: f64) -> Option<Self> {
@@ -57,22 +74,22 @@ impl UTC {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct TAI(f64, f64);
+pub struct TAI(pub f64, pub f64);
 
 #[derive(Debug, Clone, Copy)]
-pub struct TT(f64, f64);
+pub struct TT(pub f64, pub f64);
 
 #[derive(Debug, Clone, Copy)]
-pub struct UT1(f64, f64);
+pub struct UT1(pub f64, pub f64);
 
 #[derive(Debug, Clone, Copy)]
-pub struct TCG(f64, f64);
+pub struct TCG(pub f64, pub f64);
 
 #[derive(Debug, Clone, Copy)]
-pub struct TCB(f64, f64);
+pub struct TCB(pub f64, pub f64);
 
 #[derive(Debug, Clone, Copy)]
-pub struct TDB(f64, f64);
+pub struct TDB(pub f64, pub f64);
 
 impl From<TAI> for TT {
     fn from(tai: TAI) -> Self {

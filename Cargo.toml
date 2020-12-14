@@ -1,45 +1,6 @@
-[package]
-name        = "stardome"
-version     = "0.1.0"
-authors     = ["AlexApps99 <alex.apps99@gmail.com>"]
-edition     = "2018"
+[workspace]
 
-publish     = false
-description = "Planet visualization"
-repository  = "https://github.com/AlexApps99/stardome"
-
-[dependencies.gl]
-version     = "0.14.0"
-
-[dependencies.image]
-version     = "0.23.12"
-default-features = false
-features    = ["png"]
-
-[dependencies.imgui]
-version     = "0.6.0"
-
-[dependencies.imgui-opengl-renderer]
-version     = "0.10.0"
-
-[dependencies.imgui-sdl2]
-version     = "0.13.0"
-
-[dependencies.nalgebra]
-version     = "0.23.1"
-
-[dependencies.sdl2]
-version     = "0.34.3"
-
-[dependencies.sgp4]
-version     = "0.4.0"
-
-[dependencies.sofa-sys]
-version     = "2020.7.21-beta.1"
-
-[features]
-# TODO make the debug feature toggle the debug OpenGL stuff
-# Consider bringing back imgui as a feature
-# But only once it's implemented
-default     = ["debug"]
-debug       = []
+members = [
+    "sputils",
+    "stardome",
+]

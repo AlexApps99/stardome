@@ -1,9 +1,10 @@
+extern crate nalgebra as na;
 use sofa_sys::*;
 
 pub mod coord;
 pub mod time;
 
-pub fn get_mjd(
+/*pub fn get_mjd(
     year: i32,
     month: i32,
     day: i32,
@@ -30,6 +31,30 @@ pub fn get_mjd(
         let tut: f64 = time + dut1 / DAYSEC;
         Some((djmjd0, tt, date, tut))
     }
+}*/
+
+pub fn get_mjd(
+    year: i32,
+    month: i32,
+    day: i32,
+    hour: i32,
+    minute: i32,
+    second: f64,
+    dut1: f64,
+) -> Option<(f64, f64, f64, f64)> {
+    use std::convert::TryFrom;
+    let utc = time::UTC::from_ymdhms(
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+    )?;
+
+    let mjd: (time::TT, time::UT1) = (time::TAI::try_from(utc).ok()?.into(), utc.try_into_ut1(dut1).ok()?);
+    //Some(mjd)
+    Some((mjd.0.0, mjd.0.1, mjd.1.1, 0.0))
 }
 
 // glam does not support f64

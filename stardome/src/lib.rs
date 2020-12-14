@@ -1,7 +1,6 @@
 #![allow(unused_variables, dead_code)]
 extern crate nalgebra as na;
 pub mod gfx; // Don't keep pub
-pub mod sputils;
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
