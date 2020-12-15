@@ -1,36 +1,30 @@
 // https://www.iausofa.org/2020_0721_C/sofa/sofa_pn_c.pdf
-//use sofa_sys::*;
+use sofa_sys::*;
 
 // TODO add a **function** to get the matrix
 // Use **methods** to convert
 // Choose a time to store with this
 
-// Consider polar (or its orbital equivalent)
 pub type Position = na::Vector3<f64>;
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
-pub struct ICRS(Position);
+pub struct BCRS(pub Position);
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
-pub struct BCRS(Position);
+pub struct ICRS(pub Position);
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
-pub struct GCRS(Position);
+pub struct GCRS(pub Position);
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
-pub struct CIRS(Position);
+pub struct ITRS(pub Position);
 
+// http://www.celestrak.com/publications/AIAA/2006-6753/AIAA-2006-6753-Rev2.pdf
+// Page 32
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
-pub struct TIRS(Position);
-
-#[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
-pub struct ITRS(Position);
-
-// Probably some more like ecliptic, galactic, equatorial etc
-// See the manual (NOT the cookbooks)
+pub struct TEME(pub Position);

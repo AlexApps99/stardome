@@ -58,20 +58,16 @@ impl StarDome {
         self.frame_t = std::time::Instant::now();
         let elapsed = self.frame_t.duration_since(last_frame);
 
-        loop {
-            if let Some(e) = self.graphics.libs.pump.poll_event() {
-                self.imgui_sdl.handle_event(&mut self.imgui, &e);
-                if self.imgui_sdl.ignore_event(&e) {
-                    continue;
-                }
-                if self.graphics.handle_event(&e) {
-                    continue;
-                }
-                if let sdl2::event::Event::Quit { .. } = e {
-                    return Err("Quitting".into());
-                }
-            } else {
-                break;
+        while let Some(e) = self.graphics.libs.pump.poll_event() {
+            self.imgui_sdl.handle_event(&mut self.imgui, &e);
+            if self.imgui_sdl.ignore_event(&e) {
+                continue;
+            }
+            if self.graphics.handle_event(&e) {
+                continue;
+            }
+            if let sdl2::event::Event::Quit { .. } = e {
+                return Err("Quitting".into());
             }
         }
 

@@ -15,15 +15,18 @@ impl std::fmt::Display for TimeError {
 }
 
 // TODO test
+#[allow(clippy::many_single_char_names)]
 fn fmt_jd(f: &mut std::fmt::Formatter, a: f64, b: f64) -> std::fmt::Result {
     unsafe {
         let mut y: i32 = 0;
         let mut m: i32 = 0;
         let mut d: i32 = 0;
         let mut fd: f64 = 0.0;
+
         if iauJd2cal(a, b, &mut y, &mut m, &mut d, &mut fd) >= 0 {
             let mut hmsf: [i32; 4] = [0; 4];
-            iauD2tf(3, fd, std::ptr::null_mut(), hmsf.as_mut_ptr());
+            let mut sign: i8 = 0;
+            iauD2tf(3, fd, &mut sign, hmsf.as_mut_ptr());
             write!(
                 f,
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}",
@@ -64,16 +67,23 @@ impl UTC {
         })
     }
 
-    pub fn from_system_time(time: std::time::SystemTime) -> Option<Self> {
+    pub fn from_system_time(time: std::time::SystemTime) -> Self {
         let t = if let Ok(t) = time.duration_since(std::time::SystemTime::UNIX_EPOCH) {
             t.as_secs_f64()
         } else if let Ok(t) = std::time::SystemTime::UNIX_EPOCH.duration_since(time) {
             -t.as_secs_f64()
         } else {
-            return None; // Unreachable, as far as I know
+            0.0
         } / DAYSEC;
 
-        Some(UTC(240000.5, t + 40587.0))
+        UTC(2400000.5, t + 40587.0)
+    }
+}
+
+impl std::fmt::Display for UTC {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt_jd(f, self.0, self.1)?;
+        write!(f, "Z")
     }
 }
 

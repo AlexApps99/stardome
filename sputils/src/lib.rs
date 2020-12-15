@@ -4,35 +4,6 @@ use sofa_sys::*;
 pub mod coord;
 pub mod time;
 
-/*pub fn get_mjd(
-    year: i32,
-    month: i32,
-    day: i32,
-    hour: i32,
-    minute: i32,
-    second: f64,
-    dut1: f64,
-) -> Option<(f64, f64, f64, f64)> {
-    unsafe {
-        let mut djmjd0: f64 = 0.0;
-        let mut date: f64 = 0.0;
-
-        // TT (MJD)
-        if iauCal2jd(year, month, day, &mut djmjd0, &mut date) < 0 {
-            return None;
-        }
-        let time: f64 = (60.0 * (60 * hour + minute) as f64 + second) / DAYSEC;
-
-        let mut dat: f64 = 0.0;
-        if iauDat(year, month, day, time, &mut dat) < 0 {
-            return None;
-        }
-        let tt: f64 = (date + time + dat / DAYSEC) + 32.184 / DAYSEC;
-        let tut: f64 = time + dut1 / DAYSEC;
-        Some((djmjd0, tt, date, tut))
-    }
-}*/
-
 pub fn get_mjd(
     year: i32,
     month: i32,
@@ -53,8 +24,6 @@ pub fn get_mjd(
     Some((mjd.0 .0, mjd.0 .1, mjd.1 .1, 0.0))
 }
 
-// glam does not support f64
-// alternative may need to be found
 pub fn gcrs_to_itrs(
     djmjd0: f64,
     tt: f64,
