@@ -6,13 +6,10 @@ pub struct GraphicsLibs {
     pub video: sdl2::VideoSubsystem,
     pub window: sdl2::video::Window,
     pub ctx: sdl2::video::GLContext,
-    pub imgui: imgui::Context,
-    pub imgui_sdl: imgui_sdl2::ImguiSdl2,
-    pub imgui_gl: imgui_opengl_renderer::Renderer,
 }
 
 impl GraphicsLibs {
-    pub fn load() -> Result<Self, crate::BoxError> {
+    pub fn load() -> crate::BoxResult<Self> {
         let sdl = sdl2::init()?;
         let pump = sdl.event_pump()?;
         let video = sdl.video()?;
@@ -71,82 +68,13 @@ impl GraphicsLibs {
             gl::ClearColor(0.0, 0.0, 0.05, 1.0);
         }
 
-        let mut imgui = imgui::Context::create();
-        imgui.set_ini_filename(None);
-        let imgui_sdl = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
-        let imgui_gl =
-            imgui_opengl_renderer::Renderer::new(&mut imgui, |s| video.gl_get_proc_address(s) as _);
-
         Ok(Self {
             sdl,
             pump,
             video,
             window,
             ctx,
-            imgui,
-            imgui_sdl,
-            imgui_gl,
         })
-    }
-
-    // Probably doesn't go here oh well
-    pub fn handle_event_loop(&mut self) -> bool {
-        use sdl2::event::{Event, WindowEvent};
-        for e in self.pump.poll_iter() {
-            self.imgui_sdl.handle_event(&mut self.imgui, &e);
-            if self.imgui_sdl.ignore_event(&e) {
-                continue;
-            }
-            GraphicsLibs::handle_event(&e);
-            match e {
-                Event::Quit { timestamp: _ } => return false,
-                Event::Window {
-                    timestamp: _,
-                    window_id: _,
-                    win_event,
-                } => match win_event {
-                    WindowEvent::SizeChanged(x, y) => (),
-                    _ => (),
-                },
-                _ => (),
-            }
-        }
-        self.imgui_sdl
-            .prepare_frame(self.imgui.io_mut(), &self.window, &self.pump.mouse_state());
-        self.imgui.io_mut().delta_time = 0.016;
-        let ui = self.imgui.frame();
-        ui.show_demo_window(&mut true);
-        self.imgui_sdl.prepare_render(&ui, &self.window);
-        self.imgui_gl.render(ui);
-        true
-    }
-
-    // Should be run in event pump iter loop, but not exclusively
-    // That way other code can use events
-    pub fn handle_event(event: &sdl2::event::Event) {
-        if let sdl2::event::Event::Window {
-            timestamp: _,
-            window_id: _,
-            win_event,
-        } = event
-        {
-            if let sdl2::event::WindowEvent::SizeChanged(x, y) = win_event {
-                unsafe { gl::Viewport(0, 0, *x, *y) }
-                // Get the camera updated here
-                // Unless it will be handled by another function in the iter loop
-            }
-        }
-    }
-
-    // Same idea as above
-    pub fn handle_frame(&mut self) {
-        self.window.gl_swap_window();
-        unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
-    }
-
-    pub fn aspect_ratio(&mut self) -> f32 {
-        let (x, y) = self.window.size();
-        x as f32 / y as f32
     }
 }
 

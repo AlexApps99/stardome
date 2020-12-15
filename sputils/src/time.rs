@@ -15,7 +15,7 @@ impl std::fmt::Display for TimeError {
 }
 
 // TODO test
-fn fmt_jd(f: &mut std::fmt::Formatter, a: f64, b: f64, n: &str) -> std::fmt::Result {
+fn fmt_jd(f: &mut std::fmt::Formatter, a: f64, b: f64) -> std::fmt::Result {
     unsafe {
         let mut y: i32 = 0;
         let mut m: i32 = 0;
@@ -24,7 +24,11 @@ fn fmt_jd(f: &mut std::fmt::Formatter, a: f64, b: f64, n: &str) -> std::fmt::Res
         if iauJd2cal(a, b, &mut y, &mut m, &mut d, &mut fd) >= 0 {
             let mut hmsf: [i32; 4] = [0; 4];
             iauD2tf(3, fd, std::ptr::null_mut(), hmsf.as_mut_ptr());
-            write!(f, "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}", y, m, d, hmsf[0], hmsf[1], hmsf[2], hmsf[3])
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}",
+                y, m, d, hmsf[0], hmsf[1], hmsf[2], hmsf[3]
+            )
         } else {
             Err(std::fmt::Error)
         }

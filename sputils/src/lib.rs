@@ -43,18 +43,14 @@ pub fn get_mjd(
     dut1: f64,
 ) -> Option<(f64, f64, f64, f64)> {
     use std::convert::TryFrom;
-    let utc = time::UTC::from_ymdhms(
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        second,
-    )?;
+    let utc = time::UTC::from_ymdhms(year, month, day, hour, minute, second)?;
 
-    let mjd: (time::TT, time::UT1) = (time::TAI::try_from(utc).ok()?.into(), utc.try_into_ut1(dut1).ok()?);
+    let mjd: (time::TT, time::UT1) = (
+        time::TAI::try_from(utc).ok()?.into(),
+        utc.try_into_ut1(dut1).ok()?,
+    );
     //Some(mjd)
-    Some((mjd.0.0, mjd.0.1, mjd.1.1, 0.0))
+    Some((mjd.0 .0, mjd.0 .1, mjd.1 .1, 0.0))
 }
 
 // glam does not support f64

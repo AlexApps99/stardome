@@ -13,10 +13,10 @@ pub struct Graphics {
 }
 
 impl Graphics {
-    pub fn new() -> Result<Self, crate::BoxError> {
+    pub fn new() -> crate::BoxResult<Self> {
         use shader::{Program, Shader};
         let libs = libs::GraphicsLibs::load()?;
-        let meshes = vec![mesh::Mesh::uv_sphere(1.0, 36, 18), mesh::Mesh::cube()];
+        let meshes = vec![mesh::Mesh::uv_sphere(1.0, 360, 180), mesh::Mesh::cube()];
         let textures = vec![
             texture::Texture::open("img/gen/earth_albedo.png")?,
             texture::Texture::open("img/gen/earth_bathymetry.png")?,
@@ -49,6 +49,30 @@ impl Graphics {
         })
     }
 
+    pub fn aspect_ratio(&mut self) -> f32 {
+        let (x, y) = self.libs.window.size();
+        x as f32 / y as f32
+    }
+
+    pub fn handle_event(&mut self, event: &sdl2::event::Event) -> bool {
+        if let sdl2::event::Event::Window {
+            timestamp: _,
+            window_id: _,
+            win_event,
+        } = event
+        {
+            if let sdl2::event::WindowEvent::SizeChanged(x, y) = win_event {
+                unsafe { gl::Viewport(0, 0, *x, *y) }
+            }
+        }
+        false
+    }
+
+    pub fn handle_frame(&mut self) {
+        self.libs.window.gl_swap_window();
+        unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
+    }
+
     pub fn frame(
         &mut self,
         cam: &camera::Camera,
@@ -56,9 +80,8 @@ impl Graphics {
     ) -> Result<(), crate::BoxError> {
         let tw = elapsed_secs as f64 * 0.1;
         //unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); }
-        let (djmjd0, tt, date, tut) =
-            crate::sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
-        let tf = crate::sputils::gcrs_to_itrs(
+        let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
+        let tf = sputils::gcrs_to_itrs(
             djmjd0,
             tt + tw,
             date,
@@ -69,11 +92,11 @@ impl Graphics {
             0.153 * sofa_sys::DMAS2R,
         );
         // INVERSE
-        let model: na::Matrix4<f32> = na::convert(tf * na::Matrix4::new_scaling(sgp4::WGS84.ae));
+        let model: na::Matrix4<f32> = na::convert(tf * na::Matrix4::new_scaling(6378.137));
 
         // Camera parameters
         let view = cam.view_matrix();
-        let projection = cam.projection_matrix(self.libs.aspect_ratio());
+        let projection = cam.projection_matrix(self.aspect_ratio());
 
         self.progs[0].use_gl();
         self.progs[0].set_mat4("model", &model)?;
