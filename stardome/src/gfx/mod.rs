@@ -91,8 +91,11 @@ impl Graphics {
             0.115 * sofa_sys::DMAS2R,
             0.153 * sofa_sys::DMAS2R,
         );
-        // INVERSE
-        let model: na::Matrix4<f32> = na::convert(tf * na::Matrix4::new_scaling(6378.137));
+
+        let mut model: na::Matrix4<f32> =
+            na::convert::<na::Matrix3<f64>, na::Matrix3<f32>>(tf.transpose()).fixed_resize(0.0);
+        model.m44 = 1.0;
+        model *= na::Matrix4::new_scaling(6378.137);
 
         // Camera parameters
         let view = cam.view_matrix();

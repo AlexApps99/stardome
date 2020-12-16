@@ -33,7 +33,7 @@ pub fn gcrs_to_itrs(
     yp: f64,
     dx06: f64,
     dy06: f64,
-) -> na::Matrix4<f64> {
+) -> na::Matrix3<f64> {
     unsafe {
         let mut rc2ti: [[f64; 3]; 3] = [[0.0; 3]; 3];
         let mut rpom: [[f64; 3]; 3] = [[0.0; 3]; 3];
@@ -69,24 +69,10 @@ pub fn gcrs_to_itrs(
 
         // Form celestial-terrestrial matrix (including polar motion)
         iauRxr(rpom.as_mut_ptr(), rc2ti.as_mut_ptr(), rc2it.as_mut_ptr());
-        // Probably more efficient ways to achieve this
-        na::Matrix4::from_column_slice(&[
-            rc2it[0][0],
-            rc2it[0][1],
-            rc2it[0][2],
-            0.0,
-            rc2it[1][0],
-            rc2it[1][1],
-            rc2it[1][2],
-            0.0,
-            rc2it[2][0],
-            rc2it[2][1],
-            rc2it[2][2],
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        ])
+
+        // This feels like a significant hack
+        na::Matrix3::from_row_slice(std::mem::transmute::<&[f64; 3], &[f64; 9]>(
+            &*rc2it.as_ptr(),
+        ))
     }
 }
