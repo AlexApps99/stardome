@@ -8,6 +8,9 @@ publish     = false
 description = "SPace UTILS"
 repository  = "https://github.com/AlexApps99/stardome"
 
+[dependencies.jpl-sys]
+version     = "0.0.1"
+
 [dependencies.nalgebra]
 version     = "0.23.1"
 

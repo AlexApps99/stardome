@@ -3,6 +3,7 @@ use sofa_sys::*;
 
 pub mod coord;
 pub mod time;
+pub mod eph;
 
 #[inline(always)]
 pub unsafe fn sofa_matrix(m: &[[f64; 3]; 3]) -> na::Matrix3<f64> {

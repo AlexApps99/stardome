@@ -93,9 +93,15 @@ impl Graphics {
             0.153 * (4.848136811095359935899141e-6 / 1e3),
         );
 
+        // TODO THIS IS ASS MOON CODE >:/
+        let mut jpl = sputils::eph::JPL::new().unwrap();
+        let (mut pos, lib) = jpl.moon(sputils::time::TT(djmjd0, tt + tw).into_tdb(0.0));
+        pos.0 *= 149597.8707; // From AU to megameters
+
         let mut model: na::Matrix4<f32> =
             na::convert::<na::Matrix3<f64>, na::Matrix3<f32>>(tf.transpose()).fixed_resize(0.0);
         model.m44 = 1.0;
+        // Oblate spheroid
         model *= na::Matrix4::new_scaling(6.37814);
 
         // Camera parameters
@@ -111,7 +117,7 @@ impl Graphics {
         self.textures[1].bind(1);
         self.meshes[0].draw();
         // Drawing the moon
-        model = na::Matrix4::new_translation(&na::Vector3::new(384.317, 0.0, 0.0)) * na::Matrix4::new_scaling(1.7371);
+        model = na::convert::<na::Matrix4<f64>, na::Matrix4<f32>>(na::Matrix4::new_translation(&pos.0) * na::Matrix4::new_scaling(1.7371));
         self.progs[0].set_mat4("model", &model)?;
         self.textures[2].bind(0);
         unsafe {
@@ -119,6 +125,11 @@ impl Graphics {
             gl::BindTexture(gl::TEXTURE_2D, 0);
         }
         self.meshes[0].draw();
+        // TODO Bogus sun should be drawn as flat texture
+        // drawn onto skybox (don't draw it at far coordinates due to FP issues)
+        //model = na::Matrix4::new_translation(&na::Vector3::new(147120.0, 0.0, 0.0)) * na::Matrix4::new_scaling(696.34);
+        //self.progs[0].set_mat4("model", &model)?;
+        //self.meshes[0].draw();
 
         self.progs[0].unuse_gl();
 
