@@ -34,8 +34,8 @@ version     = "0.34.3"
 [dependencies.sputils]
 path        = "../sputils/"
 
-[dependencies.sofa-sys]
-version     = "2020.7.21-beta.1"
+#[dependencies.sofa-sys]
+#version     = "2020.7.21-beta.1"
 
 [features]
 # TODO make the debug feature toggle the debug OpenGL stuff

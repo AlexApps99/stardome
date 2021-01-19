@@ -29,6 +29,7 @@ pub struct TEME(pub Position);
 
 impl TEME {
     // http://www.celestrak.com/publications/AIAA/2006-6753/AIAA-2006-6753-Rev2.pdf#page=32
+    // TODO seems to be less accurate
     pub fn into_itrs_r(self, t: &crate::time::UT1, xp: f64, yp: f64) -> ITRS {
         let gmst = unsafe { iauGmst82(t.0, t.1) };
         let mut w: na::Matrix3<f64> = na::Matrix3::identity();
@@ -48,25 +49,21 @@ impl TEME {
 
     // http://www.celestrak.com/publications/AIAA/2006-6753/AIAA-2006-6753-Rev2.pdf#page=32
     // https://github.com/astropy/astropy/blob/ad40565/astropy/coordinates/builtin_frames/intermediate_rotation_transforms.py#L26-L42
-    // TODO all matrices are wrong, need to be stored as arrays and loaded in row major order
     pub fn teme_to_itrs_mat(t: &crate::time::UT1, xp: f64, yp: f64) -> na::Matrix3<f64> {
         let gst = unsafe { iauGmst82(t.0, t.1) };
-        let mut pmmat = unsafe {
-            let mut tmp: na::Matrix3<f64> = na::Matrix3::identity();
-            iauPom00(xp, yp, 0.0, tmp.as_mut_ptr() as _);
-            tmp
-        };
-
+        let mut pmmat = [[0.0_f64; 3]; 3];
         unsafe {
-            let mut rc2i: na::Matrix3<f64> = na::Matrix3::identity();
-            let mut rc2t: na::Matrix3<f64> = na::Matrix3::identity();
+            iauPom00(xp, yp, 0.0, pmmat.as_mut_ptr());
+
+            let mut rc2i: [[f64; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+            let mut rc2t: [[f64; 3]; 3] = [[0.0; 3]; 3];
             iauC2tcio(
-                rc2i.as_mut_ptr() as _,
+                rc2i.as_mut_ptr(),
                 gst,
-                pmmat.as_mut_ptr() as _,
-                rc2t.as_mut_ptr() as _,
+                pmmat.as_mut_ptr(),
+                rc2t.as_mut_ptr(),
             );
-            rc2t
+            crate::sofa_matrix(&rc2t)
         }
     }
 }

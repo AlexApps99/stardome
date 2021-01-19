@@ -35,7 +35,7 @@ impl StarDome {
         let mut s = Self {
             graphics,
             cam: gfx::camera::Camera::new(
-                na::Vector3::new(20000.0, 0.0, 0.0),
+                na::Vector3::new(10.0, 0.0, 0.0),
                 90.0_f32.to_radians(),
                 0.0_f32.to_radians(),
                 90.0_f32.to_radians(),

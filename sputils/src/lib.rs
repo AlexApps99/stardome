@@ -4,6 +4,11 @@ use sofa_sys::*;
 pub mod coord;
 pub mod time;
 
+#[inline(always)]
+pub unsafe fn sofa_matrix(m: &[[f64; 3]; 3]) -> na::Matrix3<f64> {
+    na::Matrix3::from_row_slice(std::mem::transmute::<_, &[f64; 9]>(m))
+}
+
 pub fn get_mjd(
     year: i32,
     month: i32,
@@ -70,9 +75,6 @@ pub fn gcrs_to_itrs(
         // Form celestial-terrestrial matrix (including polar motion)
         iauRxr(rpom.as_mut_ptr(), rc2ti.as_mut_ptr(), rc2it.as_mut_ptr());
 
-        // This feels like a significant hack
-        na::Matrix3::from_row_slice(std::mem::transmute::<&[f64; 3], &[f64; 9]>(
-            &*rc2it.as_ptr(),
-        ))
+        sofa_matrix(&rc2it)
     }
 }

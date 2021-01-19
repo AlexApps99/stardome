@@ -18,8 +18,8 @@ impl Camera {
             ry,
             rz,
             fov: 90.0,
-            near_plane: 0.1,
-            far_plane: 50000.0,
+            near_plane: 1.0,
+            far_plane: 500.0,
         }
     }
 

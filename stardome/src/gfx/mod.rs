@@ -20,6 +20,7 @@ impl Graphics {
         let textures = vec![
             texture::Texture::open("img/gen/earth_albedo.png")?,
             texture::Texture::open("img/gen/earth_bathymetry.png")?,
+            texture::Texture::open("img/gen/moon_albedo.png")?,
         ];
         let cubemap = texture::Cubemap::open("img/gen/milky_way.png")?;
         let progs = vec![
@@ -86,16 +87,16 @@ impl Graphics {
             tt + tw,
             date,
             tut + tw,
-            0.093343 * sofa_sys::DAS2R,
-            0.289699 * sofa_sys::DAS2R,
-            0.115 * sofa_sys::DMAS2R,
-            0.153 * sofa_sys::DMAS2R,
+            0.093343 * 4.848136811095359935899141e-6,
+            0.289699 * 4.848136811095359935899141e-6,
+            0.115 * (4.848136811095359935899141e-6 / 1e3),
+            0.153 * (4.848136811095359935899141e-6 / 1e3),
         );
 
         let mut model: na::Matrix4<f32> =
             na::convert::<na::Matrix3<f64>, na::Matrix3<f32>>(tf.transpose()).fixed_resize(0.0);
         model.m44 = 1.0;
-        model *= na::Matrix4::new_scaling(6378.137);
+        model *= na::Matrix4::new_scaling(6.37814);
 
         // Camera parameters
         let view = cam.view_matrix();
@@ -109,6 +110,16 @@ impl Graphics {
         self.textures[0].bind(0);
         self.textures[1].bind(1);
         self.meshes[0].draw();
+        // Drawing the moon
+        model = na::Matrix4::new_translation(&na::Vector3::new(384.317, 0.0, 0.0)) * na::Matrix4::new_scaling(1.7371);
+        self.progs[0].set_mat4("model", &model)?;
+        self.textures[2].bind(0);
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE1);
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+        self.meshes[0].draw();
+
         self.progs[0].unuse_gl();
 
         // Cubemap
