@@ -34,6 +34,11 @@ version     = "0.34.3"
 [dependencies.sputils]
 path        = "../sputils/"
 
+[dependencies.rspice]
+# not smart
+default-features = false
+path        = "../../cspice/rspice/"
+
 #[dependencies.sofa-sys]
 #version     = "2020.7.21-beta.1"
 

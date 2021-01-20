@@ -1,5 +1,7 @@
 pub mod camera;
+pub mod drawable;
 pub mod libs;
+pub mod material;
 pub mod mesh;
 pub mod shader;
 pub mod texture;
@@ -17,11 +19,11 @@ impl Graphics {
         use shader::{Program, Shader};
         let libs = libs::GraphicsLibs::load()?;
         let meshes = vec![mesh::Mesh::uv_sphere(1.0, 360, 180), mesh::Mesh::cube()];
-        let textures = vec![
+        let textures = vec![/*
             texture::Texture::open("img/gen/earth_albedo.png")?,
             texture::Texture::open("img/gen/earth_bathymetry.png")?,
             texture::Texture::open("img/gen/moon_albedo.png")?,
-        ];
+        */];
         let cubemap = texture::Cubemap::open("img/gen/milky_way.png")?;
         let progs = vec![
             Program::new(&[
@@ -32,10 +34,13 @@ impl Graphics {
                 &Shader::vertex(include_bytes!("../glsl/box.vert.glsl"))?,
                 &Shader::frag(include_bytes!("../glsl/box.frag.glsl"))?,
             ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/simple.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/simple.frag.glsl"))?,
+            ])?,
         ];
         progs[0].use_gl();
         progs[0].set_int("texture1", 0)?;
-        progs[0].set_int("texture2", 1)?;
         progs[0].unuse_gl();
         progs[1].use_gl();
         progs[1].set_int("skybox", 0)?;
@@ -72,6 +77,23 @@ impl Graphics {
     pub fn handle_frame(&mut self) {
         self.libs.window.gl_swap_window();
         unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
+    }
+
+    pub fn draw_skybox(&mut self, cam: &camera::Camera) {
+        // Cubemap
+        unsafe {
+            gl::DepthFunc(gl::LEQUAL);
+        }
+        self.progs[1].use_gl();
+        let _ = self.progs[1].set_mat4("view", &cam.rot_matrix());
+        let projection = cam.projection_matrix(self.aspect_ratio());
+        let _ = self.progs[1].set_mat4("projection", &projection);
+        self.cubemap.bind(0);
+        self.meshes[1].draw();
+        self.progs[1].unuse_gl();
+        unsafe {
+            gl::DepthFunc(gl::LESS);
+        }
     }
 
     pub fn frame(
@@ -117,7 +139,9 @@ impl Graphics {
         self.textures[1].bind(1);
         self.meshes[0].draw();
         // Drawing the moon
-        model = na::convert::<na::Matrix4<f64>, na::Matrix4<f32>>(na::Matrix4::new_translation(&pos.0) * na::Matrix4::new_scaling(1.7371));
+        model = na::convert::<na::Matrix4<f64>, na::Matrix4<f32>>(
+            na::Matrix4::new_translation(&pos.0) * na::Matrix4::new_scaling(1.7371),
+        );
         self.progs[0].set_mat4("model", &model)?;
         self.textures[2].bind(0);
         unsafe {
@@ -133,18 +157,7 @@ impl Graphics {
 
         self.progs[0].unuse_gl();
 
-        // Cubemap
-        unsafe {
-            gl::DepthFunc(gl::LEQUAL);
-        }
-        self.progs[1].use_gl();
-        self.progs[1].set_mat4("view", &cam.rot_matrix())?;
-        self.progs[1].set_mat4("projection", &projection)?;
-        self.cubemap.bind(0);
-        self.meshes[1].draw();
-        unsafe {
-            gl::DepthFunc(gl::LESS);
-        }
+        self.draw_skybox(&cam);
 
         Ok(())
     }

@@ -1,8 +1,76 @@
 #![allow(unused_variables, dead_code)]
 
 use stardome::StarDome;
+extern crate nalgebra as na;
+
+fn mat3_to_mat4(m: &na::Matrix3<f64>) -> na::Matrix4<f64> {
+    let mut m: na::Matrix4<f64> = m.fixed_resize(0.0);
+    m.m44 = 1.0;
+    m
+}
+
+fn rows_to_mat3(r: &[[f64; 3]; 3]) -> na::Matrix3<f64> {
+    nalgebra::Matrix3::from_row_slice(unsafe {
+        std::mem::transmute::<&[[f64; 3]; 3], &[f64; 9]>(&r)
+    })
+}
+
+fn get_mat_old(djmjd0: f64, tt: f64, date: f64, tut: f64, tw: f64) -> na::Matrix4<f64> {
+    let tf = sputils::gcrs_to_itrs(
+        djmjd0,
+        tt + tw,
+        date,
+        tut + tw,
+        0.093343 * 4.848136811095359935899141e-6,
+        0.289699 * 4.848136811095359935899141e-6,
+        0.115 * (4.848136811095359935899141e-6 / 1e3),
+        0.153 * (4.848136811095359935899141e-6 / 1e3),
+    );
+    mat3_to_mat4(&tf.transpose())
+}
+
+fn get_mat(et: f64) -> na::Matrix4<f64> {
+    let m = rspice::pxform("ITRF93", "J2000", et);
+    mat3_to_mat4(&rows_to_mat3(&m))
+}
+
+fn get_moon_mat_old(
+    jpl: &mut sputils::eph::JPL,
+    djmjd0: f64,
+    tt: f64,
+    tw: f64,
+) -> na::Matrix4<f64> {
+    let (mut pos, lib) = jpl.moon(sputils::time::TT(djmjd0, tt + tw).into_tdb(0.0));
+    pos.0 *= 149597.8707; // From AU to megameters
+    na::Matrix4::new_translation(&pos.0)
+}
+
+fn get_moon_pos(et: f64) -> na::Vector3<f64> {
+    // This is km
+    let (t, _) = rspice::spkpos("MOON", et, "J2000", "NONE", "EARTH");
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
+}
+
+fn get_moon_mat(et: f64) -> na::Matrix4<f64> {
+    let m = rspice::pxform("MOON_ME", "J2000", et);
+    let mut m = mat3_to_mat4(&rows_to_mat3(&m));
+    m.append_translation(&get_moon_pos(et))
+}
+
+fn get_iss_pos(et: f64) -> na::Vector3<f64> {
+    // This is km
+    let (t, _) = rspice::spkgps(-6969, et, "J2000", 399);
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
+}
+
+fn get_sun_pos(et: f64) -> na::Vector3<f64> {
+    // This is km
+    let (t, _) = rspice::spkpos("SUN", et, "J2000", "NONE", "EARTH");
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
+}
 
 fn main() {
+    rspice::furnsh("../cspice/kernels/all.tm");
     use imgui::im_str;
     let mut sd = StarDome::new().unwrap();
 
@@ -12,9 +80,54 @@ fn main() {
     let mut ry = sd.cam.ry;
     let mut rz = sd.cam.rz;
     let mut fov = sd.cam.get_fov().to_radians();
+
+    let beninging = std::time::Instant::now();
+    //let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
+    let et = rspice::str2et("2021-01-18T00:00:00");
+
+    let mut earth = stardome::Planet {
+        r_equatorial: 6.37814,
+        r_polar: 6.37814,
+        lighting: true,
+        texture: stardome::Texture::open("img/gen/earth.png").unwrap(),
+        atm: None,
+        clouds: None,
+        tf: get_mat(et),
+    };
+
+    let mut moon = stardome::Planet {
+        r_equatorial: 1.7371,
+        r_polar: 1.7371,
+        lighting: true,
+        texture: stardome::Texture::open("img/gen/moon.png").unwrap(),
+        atm: None,
+        clouds: None,
+        tf: get_moon_mat(et),
+    };
+
+    let mut pts = vec![na::Vector3::zeros(); 2];
+    let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, pts);
+    let mut iss = stardome::Points::new(0xFF00FF80, 8.0, false, vec![na::Vector3::zeros()]);
     loop {
+        sd.sun = get_sun_pos(et);
+        let tw = beninging.elapsed().as_secs_f64() * 60.0;
         // This makes some things a bit problematic because of borrowing
         // Consider using this for imgui only, and having rest of stuff just be functions
+        sd.draw(&mut earth);
+        sd.draw(&mut moon);
+        test_line.modify_points(|p| {
+            p[1].copy_from(&na::convert::<na::Vector3<f64>, na::Vector3<f32>>(
+                get_moon_pos(et + tw),
+            ));
+        });
+        iss.modify_points(|p| {
+            p[0].copy_from(&na::convert::<na::Vector3<f64>, na::Vector3<f32>>(
+                get_iss_pos(et + tw),
+            ));
+        });
+        sd.draw(&mut test_line);
+        sd.draw(&mut iss);
+
         if sd
             .frame(|ui| {
                 // TODO put all code for stuff here
@@ -41,6 +154,9 @@ fn main() {
                             .max_degrees(179.0)
                             .flags(imgui::SliderFlags::ALWAYS_CLAMP)
                             .build(&ui, &mut fov);
+
+                        ui.text(format!("Moon: {:?}", test_line.get_points()[1].as_slice()));
+                        ui.text(format!("Time: {}", et + tw));
                     });
             })
             .is_err()
@@ -54,5 +170,7 @@ fn main() {
         sd.cam.ry = ry;
         sd.cam.rz = rz;
         sd.cam.set_fov(fov.to_degrees());
+        earth.tf = get_mat(et + tw);
+        moon.tf = get_moon_mat(et + tw);
     }
 }

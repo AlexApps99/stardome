@@ -8,7 +8,11 @@ pub struct JPL(*mut std::os::raw::c_void);
 impl JPL {
     pub fn new() -> Result<Self, i32> {
         unsafe {
-            let p = jpl_init_ephemeris(b"JPLEPH\0".as_ptr() as _, std::ptr::null_mut(), std::ptr::null_mut());
+            let p = jpl_init_ephemeris(
+                b"JPLEPH\0".as_ptr() as _,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            );
             if p.is_null() {
                 Err(jpl_init_error_code())
             } else {

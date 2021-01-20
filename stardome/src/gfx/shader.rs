@@ -104,6 +104,30 @@ impl Program {
         }
         Ok(())
     }
+
+    pub fn set_vec4(&self, name: &str, v: &na::Vector4<f32>) -> Result<(), std::ffi::NulError> {
+        let cstring = std::ffi::CString::new(name)?;
+        unsafe {
+            gl::Uniform4fv(
+                gl::GetUniformLocation(self.0, cstring.as_ptr()),
+                1,
+                v.as_slice().as_ptr(),
+            )
+        }
+        Ok(())
+    }
+
+    pub fn set_vec3(&self, name: &str, v: &na::Vector3<f32>) -> Result<(), std::ffi::NulError> {
+        let cstring = std::ffi::CString::new(name)?;
+        unsafe {
+            gl::Uniform3fv(
+                gl::GetUniformLocation(self.0, cstring.as_ptr()),
+                1,
+                v.as_slice().as_ptr(),
+            )
+        }
+        Ok(())
+    }
 }
 
 impl Drop for Program {

@@ -2,8 +2,8 @@ extern crate nalgebra as na;
 use sofa_sys::*;
 
 pub mod coord;
-pub mod time;
 pub mod eph;
+pub mod time;
 
 #[inline(always)]
 pub unsafe fn sofa_matrix(m: &[[f64; 3]; 3]) -> na::Matrix3<f64> {

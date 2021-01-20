@@ -2,6 +2,10 @@
 extern crate nalgebra as na;
 mod gfx;
 
+pub use gfx::drawable::Planet;
+pub use gfx::drawable::Points;
+pub use gfx::texture::Texture;
+
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type BoxResult<T> = Result<T, BoxError>;
 
@@ -14,6 +18,7 @@ macro_rules! cstr {
 pub struct StarDome {
     pub graphics: gfx::Graphics,
     pub cam: gfx::camera::Camera,
+    pub sun: na::Vector3<f64>,
     begin: std::time::Instant,
     frame_t: std::time::Instant,
     imgui: imgui::Context,
@@ -40,6 +45,7 @@ impl StarDome {
                 0.0_f32.to_radians(),
                 90.0_f32.to_radians(),
             ),
+            sun: na::Vector3::zeros(), // When it's zeros lighting is disabled
             begin: t,
             frame_t: t,
             imgui,
@@ -48,6 +54,16 @@ impl StarDome {
         };
         s.graphics.libs.window.show();
         Ok(s)
+    }
+
+    pub fn get_sun_dir(&self) -> na::Vector3<f32> {
+        // Does normalize work with zeroes
+        na::convert(self.sun.normalize())
+    }
+
+    pub fn draw<T: gfx::drawable::Drawable>(&mut self, d: &mut T) {
+        let s = self.get_sun_dir();
+        d.draw(&mut self.graphics, &self.cam, s).unwrap();
     }
 
     pub fn frame<F>(&mut self, mut f: F) -> BoxResult<std::time::Duration>
@@ -82,8 +98,9 @@ impl StarDome {
 
         f(&mut ui);
 
-        self.graphics
-            .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
+        //self.graphics
+        //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
+        self.graphics.draw_skybox(&self.cam);
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
         self.imgui_gl.render(ui);
