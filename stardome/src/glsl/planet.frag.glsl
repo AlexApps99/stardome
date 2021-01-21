@@ -10,29 +10,37 @@ uniform sampler2D texture1;
 uniform vec3 sun;
 uniform vec3 cam_pos;
 
-// I am assuming the sun is white (cos it is)
+#define DIFF_THRSH (0.05)
+#define SPEC_THRSH (0.95)
+#define SPEC_COEFF (1.0)
+#define AMBIENT (0.0)
+#define SHININESS (4.0)
 
+// TODO Night lighting (cities)
+// TODO Moonlight
 void main() {
-    // TODO Perhaps alpha channel should be specular
-    // Would need one less massive texture to be loaded :)
-    // TODO moonlight would be cool
     vec4 data = texture(texture1, TexCoord);
-    // If lighting is enabled
-    // Sun comes pre-normalized
-    vec3 result = data.rgb; // albedo
+    vec3 result = data.rgb;
+
     if (sun != vec3(0.0, 0.0, 0.0)) {
-        vec3 norm = normalize(Norm);
-        float diff = max(dot(norm, sun), 0.0);
-        float spec = 0.0;
-        if (data.a <= 0.95) {
+        // Diffuse
+        vec3 light = normalize(sun);
+        vec3 normal = normalize(Norm);
+        float diffuse = max(dot(normal, light), 0.0);
+        float specular = 0.0;
+
+        // TODO fade into specular/diffuse (sharp edge looks bad)
+        // Potentially determine using ocean color as well as bathymetry
+        // TODO pick a nicer ocean color
+        if (data.a <= SPEC_THRSH && diffuse > DIFF_THRSH) {
+            discard;
             // Specular
-            vec3 viewDir = normalize(cam_pos - FragPos);
-            vec3 reflectDir = reflect(-sun, norm);
-            // (see learnopengl for meaning of this)
-            spec = 1.25 * pow(max(dot(viewDir, reflectDir), 0.0), 256);
+            vec3 view = normalize(cam_pos - FragPos);
+            vec3 halfway = normalize(light + view);
+            specular = SPEC_COEFF * pow(max(dot(normal, halfway), 0.0), SHININESS);
         }
 
-        result *= vec3(0.05 + diff + spec);
+        result *= vec3(AMBIENT + diffuse + specular);
 	}
 
     FragColor = vec4(result, 1.0);

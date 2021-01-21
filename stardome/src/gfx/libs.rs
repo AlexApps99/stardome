@@ -62,12 +62,12 @@ impl GraphicsLibs {
 
             gl::Viewport(0, 0, 960, 540);
             gl::Enable(gl::DEPTH_TEST);
-            //gl::Enable(gl::CULL_FACE);
+            gl::Enable(gl::CULL_FACE);
             gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
             gl::Enable(gl::MULTISAMPLE);
             gl::Enable(gl::LINE_SMOOTH);
+            gl::Disable(gl::PROGRAM_POINT_SIZE);
             gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
-            gl::ClearColor(0.0, 0.0, 0.05, 1.0);
         }
 
         Ok(Self {

@@ -63,6 +63,14 @@ fn get_iss_pos(et: f64) -> na::Vector3<f64> {
     na::Vector3::new(t[0], t[1], t[2]) / 1000.0
 }
 
+fn get_iss_line(et: f64) -> Vec<na::Vector3<f32>> {
+    let mut v = Vec::with_capacity(60 * 60);
+    for x in -(60 * 60)..(60 * 60) {
+        v.push(na::convert(get_iss_pos(et + (x as f64))))
+    }
+    v
+}
+
 fn get_sun_pos(et: f64) -> na::Vector3<f64> {
     // This is km
     let (t, _) = rspice::spkpos("SUN", et, "J2000", "NONE", "EARTH");
@@ -83,7 +91,7 @@ fn main() {
 
     let beninging = std::time::Instant::now();
     //let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
-    let et = rspice::str2et("2021-01-18T00:00:00");
+    let et = rspice::str2et("2021-01-18T12:00:00");
 
     let mut earth = stardome::Planet {
         r_equatorial: 6.37814,
@@ -108,6 +116,7 @@ fn main() {
     let mut pts = vec![na::Vector3::zeros(); 2];
     let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, pts);
     let mut iss = stardome::Points::new(0xFF00FF80, 8.0, false, vec![na::Vector3::zeros()]);
+    let mut orbit = stardome::Points::new(0x00FF0080, 1.0, true, get_iss_line(et));
     loop {
         sd.sun = get_sun_pos(et);
         let tw = beninging.elapsed().as_secs_f64() * 60.0;
@@ -127,6 +136,7 @@ fn main() {
         });
         sd.draw(&mut test_line);
         sd.draw(&mut iss);
+        sd.draw(&mut orbit);
 
         if sd
             .frame(|ui| {
