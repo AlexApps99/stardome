@@ -4,6 +4,7 @@ mod gfx;
 
 pub use gfx::drawable::Planet;
 pub use gfx::drawable::Points;
+pub use gfx::drawable::Text;
 pub use gfx::texture::Texture;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
@@ -24,6 +25,7 @@ pub struct StarDome {
     imgui: imgui::Context,
     imgui_sdl: imgui_sdl2::ImguiSdl2,
     imgui_gl: imgui_opengl_renderer::Renderer,
+    text: Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
 }
 
 impl StarDome {
@@ -51,6 +53,7 @@ impl StarDome {
             imgui,
             imgui_sdl,
             imgui_gl,
+            text: Vec::new(),
         };
         s.graphics.libs.window.show();
         Ok(s)
@@ -63,7 +66,8 @@ impl StarDome {
 
     pub fn draw<T: gfx::drawable::Drawable>(&mut self, d: &mut T) {
         let s = self.get_sun_dir();
-        d.draw(&mut self.graphics, &self.cam, s).unwrap();
+        d.draw(&mut self.graphics, &self.cam, s, &mut self.text)
+            .unwrap();
     }
 
     pub fn frame<F>(&mut self, mut f: F) -> BoxResult<std::time::Duration>
@@ -97,6 +101,61 @@ impl StarDome {
         //ui.show_demo_window(&mut true);
 
         f(&mut ui);
+        if self.text.len() > 0 {
+            let vc = std::mem::replace(&mut self.text, Vec::new());
+            let tf =
+                self.cam.projection_matrix(self.graphics.aspect_ratio()) * self.cam.view_matrix();
+            let (sx, sy) = self.graphics.libs.window.size();
+            let sx = sx as f32;
+            let sy = sy as f32;
+            use imgui::WindowFlags;
+            // TODO make sure no styling (eg padding/window edge) gets in way
+            imgui::Window::new(imgui::im_str!("Text"))
+                .flags(
+                    WindowFlags::NO_MOVE
+                        | WindowFlags::NO_SCROLL_WITH_MOUSE
+                        | WindowFlags::NO_BACKGROUND
+                        | WindowFlags::NO_SAVED_SETTINGS
+                        | WindowFlags::NO_FOCUS_ON_APPEARING
+                        | WindowFlags::NO_BRING_TO_FRONT_ON_FOCUS
+                        | WindowFlags::NO_DECORATION
+                        | WindowFlags::NO_INPUTS,
+                )
+                .position([0.0, 0.0], imgui::Condition::Always)
+                .size([sx, sy], imgui::Condition::Always)
+                .build(&ui, || {
+                    let no_pad = ui.push_style_var(imgui::StyleVar::WindowPadding([0.0, 0.0]));
+                    for (pos, color, text) in vc.iter() {
+                        let pce =
+                            tf * na::Vector4::new(pos.x as f32, pos.y as f32, pos.z as f32, 1.0);
+                        let pos: [f32; 2] = [
+                            (pce.x / pce.w / 2.0 + 0.5) * sx,
+                            (-pce.y / pce.w / 2.0 + 0.5) * sy,
+                        ];
+                        let comp: [u8; 4] = unsafe { std::mem::transmute(*color) };
+                        let col = [
+                            comp[3] as f32 / 255.0,
+                            comp[2] as f32 / 255.0,
+                            comp[1] as f32 / 255.0,
+                            comp[0] as f32 / 255.0,
+                        ];
+
+                        // Clip offscreen based on text width
+                        let [tx, ty] = ui.calc_text_size(text, false, 0.0);
+
+                        if pce.z > 0.0
+                            && pos[0] + tx > 0.0
+                            && pos[1] + ty > 0.0
+                            && pos[0] < sx
+                            && pos[1] < sy
+                        {
+                            ui.set_cursor_screen_pos(pos);
+                            ui.text_colored(col, text);
+                        }
+                    }
+                    no_pad.pop(&ui);
+                });
+        }
 
         //self.graphics
         //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;

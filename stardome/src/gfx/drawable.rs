@@ -10,6 +10,7 @@ pub trait Drawable {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         s: na::Vector3<f32>,
+        t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
     ) -> Result<(), std::ffi::NulError>;
 }
 
@@ -65,6 +66,7 @@ impl Drawable for Planet {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         s: na::Vector3<f32>,
+        _t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
     ) -> Result<(), std::ffi::NulError> {
         let view = c.view_matrix();
         let projection = c.projection_matrix(g.aspect_ratio());
@@ -74,7 +76,7 @@ impl Drawable for Planet {
         g.progs[0].set_mat4("projection", &projection)?;
         let z = na::Vector3::zeros();
         g.progs[0].set_vec3("sun", if self.lighting { &s } else { &z })?;
-        g.progs[0].set_vec3("cam_pos", &c.position);
+        g.progs[0].set_vec3("cam_pos", &c.position)?;
 
         self.texture.bind(0);
         g.meshes[0].draw();
@@ -180,6 +182,7 @@ impl Drawable for Points {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         _s: na::Vector3<f32>,
+        _t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
     ) -> Result<(), std::ffi::NulError> {
         // TODO let user provide this
         let model: na::Matrix4<f32> = na::Matrix4::identity();
@@ -227,6 +230,29 @@ impl Drawable for Points {
             gl::BindVertexArray(0);
         }
         g.progs[2].unuse_gl();
+        Ok(())
+    }
+}
+
+pub struct Text {
+    pub position: na::Vector3<f64>,
+    pub color: u32,
+    pub text: String,
+}
+
+impl Drawable for Text {
+    fn draw(
+        &mut self,
+        g: &mut super::Graphics,
+        c: &super::camera::Camera,
+        _s: na::Vector3<f32>,
+        t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
+    ) -> Result<(), std::ffi::NulError> {
+        t.push((
+            self.position.clone_owned(),
+            self.color,
+            imgui::ImString::new(self.text.clone()),
+        ));
         Ok(())
     }
 }

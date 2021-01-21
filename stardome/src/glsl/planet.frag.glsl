@@ -33,7 +33,6 @@ void main() {
         // Potentially determine using ocean color as well as bathymetry
         // TODO pick a nicer ocean color
         if (data.a <= SPEC_THRSH && diffuse > DIFF_THRSH) {
-            discard;
             // Specular
             vec3 view = normalize(cam_pos - FragPos);
             vec3 halfway = normalize(light + view);

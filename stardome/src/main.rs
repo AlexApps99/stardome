@@ -53,8 +53,7 @@ fn get_moon_pos(et: f64) -> na::Vector3<f64> {
 
 fn get_moon_mat(et: f64) -> na::Matrix4<f64> {
     let m = rspice::pxform("MOON_ME", "J2000", et);
-    let mut m = mat3_to_mat4(&rows_to_mat3(&m));
-    m.append_translation(&get_moon_pos(et))
+    mat3_to_mat4(&rows_to_mat3(&m)).append_translation(&get_moon_pos(et))
 }
 
 fn get_iss_pos(et: f64) -> na::Vector3<f64> {
@@ -113,8 +112,19 @@ fn main() {
         tf: get_moon_mat(et),
     };
 
-    let mut pts = vec![na::Vector3::zeros(); 2];
-    let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, pts);
+    let mut iss_label = stardome::Text {
+        position: na::Vector3::zeros(),
+        color: 0xFF00FF80,
+        text: "International Space Station".to_string(),
+    };
+
+    let mut moon_label = stardome::Text {
+        position: na::Vector3::zeros(),
+        color: 0xFFFFFF20,
+        text: "Moon".to_string(),
+    };
+
+    let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, vec![na::Vector3::zeros(); 2]);
     let mut iss = stardome::Points::new(0xFF00FF80, 8.0, false, vec![na::Vector3::zeros()]);
     let mut orbit = stardome::Points::new(0x00FF0080, 1.0, true, get_iss_line(et));
     loop {
@@ -134,9 +144,13 @@ fn main() {
                 get_iss_pos(et + tw),
             ));
         });
+        iss_label.position = na::convert(iss.get_points()[0].clone_owned());
+        moon_label.position = na::convert(get_moon_pos(et + tw));
         sd.draw(&mut test_line);
         sd.draw(&mut iss);
         sd.draw(&mut orbit);
+        sd.draw(&mut iss_label);
+        sd.draw(&mut moon_label);
 
         if sd
             .frame(|ui| {
