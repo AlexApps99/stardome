@@ -87,6 +87,7 @@ fn main() {
     let mut ry = sd.cam.ry;
     let mut rz = sd.cam.rz;
     let mut fov = sd.cam.get_fov().to_radians();
+    let mut exp = sd.cam.exposure;
 
     let beninging = std::time::Instant::now();
     //let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
@@ -192,6 +193,10 @@ fn main() {
                             .max_degrees(179.0)
                             .flags(imgui::SliderFlags::ALWAYS_CLAMP)
                             .build(&ui, &mut fov);
+                        imgui::Slider::new(im_str!("Exposure"))
+                            .range(0.0..=10.0)
+                            .flags(imgui::SliderFlags::ALWAYS_CLAMP)
+                            .build(&ui, &mut exp);
 
                         ui.text(format!("Moon: {:?}", test_line.get_points()[1].as_slice()));
                         ui.text(format!("Time: {}", et + tw));
@@ -207,6 +212,7 @@ fn main() {
         sd.cam.rx = rx;
         sd.cam.ry = ry;
         sd.cam.rz = rz;
+        sd.cam.exposure = exp;
         sd.cam.set_fov(fov.to_degrees());
         earth.tf = get_mat(et + tw);
         moon.tf = get_moon_mat(et + tw);

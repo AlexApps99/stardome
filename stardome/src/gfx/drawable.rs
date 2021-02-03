@@ -256,6 +256,7 @@ impl Drawable for Points {
             }
             gl::BindVertexArray(self.vao);
             gl::Enable(gl::BLEND);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::DrawArrays(
                 // TODO GL_LINES, GL_LINE_LOOP
@@ -269,6 +270,7 @@ impl Drawable for Points {
                 self.points.len() as i32,
             );
             gl::Disable(gl::BLEND);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, g.fb);
             gl::BindVertexArray(0);
         }
         g.progs[2].unuse_gl();

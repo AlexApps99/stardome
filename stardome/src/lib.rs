@@ -163,8 +163,11 @@ impl StarDome {
         self.graphics.draw_skybox(&self.cam, &self.sun);
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
+        //unsafe { gl::Disable(gl::FRAMEBUFFER_SRGB) }
+        self.graphics.handle_frame(&self.cam);
         self.imgui_gl.render(ui);
-        self.graphics.handle_frame();
+        //unsafe { gl::Enable(gl::FRAMEBUFFER_SRGB) }
+        self.graphics.flip_frame();
         Ok(self.frame_t.elapsed())
     }
 }

@@ -21,5 +21,5 @@ void main() {
         float c = 1.0 - m * sun_angle_rad;
         sun_mix = m * sun + c;
     }
-    FragColor = vec4(texture(skybox, TexCoords).rgb + vec3(sun_mix), 1.0);
+    FragColor = vec4(texture(skybox, TexCoords).rgb + vec3(20.0 * sun_mix), 1.0);
 }

@@ -37,8 +37,8 @@ impl Texture {
         let (i_fmt, e_fmt, s, dim, data) = match i {
             ImageLuma8(img)   => (gl::R8     as i32, gl::RED,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageLumaA8(img)  => (gl::RG8    as i32, gl::RG,   gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageRgb8(img)    => (gl::RGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgb8(img)    => (gl::SRGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgba8(img)   => (gl::SRGB8_ALPHA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
@@ -127,8 +127,8 @@ impl Cubemap {
         let (i_fmt, e_fmt, s, dim, data) = match i {
             ImageLuma8(img)   => (gl::R8     as i32, gl::RED,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageLumaA8(img)  => (gl::RG8    as i32, gl::RG,   gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageRgb8(img)    => (gl::RGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
-            ImageRgba8(img)   => (gl::RGBA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgb8(img)    => (gl::SRGB8   as i32, gl::RGB,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
+            ImageRgba8(img)   => (gl::SRGB8_ALPHA8  as i32, gl::RGBA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgr8(img)    => (gl::RGB8   as i32, gl::BGR,  gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageBgra8(img)   => (gl::RGBA8  as i32, gl::BGRA, gl::UNSIGNED_BYTE,  img.dimensions(), img.into_raw()),
             ImageLuma16(img)  => (gl::R16    as i32, gl::RED,  gl::UNSIGNED_SHORT, img.dimensions(), into_v8(img.into_raw())),
