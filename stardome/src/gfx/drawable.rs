@@ -29,10 +29,18 @@ pub struct Planet {
 }
 
 // Need more atmosphere parameters
+// Make sure to deal with different positions orientations scales properly
+// TODO Use f32s/f64s consistently
 pub struct Atmosphere {
     // Offset from point on ground
     // This way it fits with oblate spheroid
     pub offset: f64,
+    pub sun_intensity: f64,
+    pub scale_height_r: f64,
+    pub scatter_coeff_r: na::Vector3<f32>,
+    pub scale_height_m: f64,
+    pub scatter_coeff_m: na::Vector3<f32>,
+    pub asymmetry_m: f64,
 }
 
 // Should include cloud rotation
@@ -46,8 +54,16 @@ pub struct Clouds {
 }
 
 impl Planet {
-    pub fn mat64(&self) -> na::Matrix4<f64> {
-        &self.tf
+    pub fn mat64(&self, atm: Option<&Atmosphere>) -> na::Matrix4<f64> {
+        if let Some(a) = atm {
+            return self.tf
+                * na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(
+                    self.r_equatorial + a.offset,
+                    self.r_equatorial + a.offset,
+                    self.r_polar + a.offset,
+                ));
+        }
+        self.tf
             * na::Matrix4::new_nonuniform_scaling(&na::Vector3::new(
                 self.r_equatorial,
                 self.r_equatorial,
@@ -55,8 +71,8 @@ impl Planet {
             ))
     }
 
-    pub fn mat32(&self) -> na::Matrix4<f32> {
-        na::convert(self.mat64())
+    pub fn mat32(&self, atm: Option<&Atmosphere>) -> na::Matrix4<f32> {
+        na::convert(self.mat64(atm))
     }
 }
 
@@ -71,7 +87,7 @@ impl Drawable for Planet {
         let view = c.view_matrix();
         let projection = c.projection_matrix(g.aspect_ratio());
         g.progs[0].use_gl();
-        g.progs[0].set_mat4("model", &self.mat32())?;
+        g.progs[0].set_mat4("model", &self.mat32(None))?;
         g.progs[0].set_mat4("view", &view)?;
         g.progs[0].set_mat4("projection", &projection)?;
         let z = na::Vector3::zeros();
@@ -81,6 +97,32 @@ impl Drawable for Planet {
         self.texture.bind(0);
         g.meshes[0].draw();
         g.progs[0].unuse_gl();
+
+        if self.lighting && s != z {
+            if let Some(a) = &self.atm {
+                g.progs[3].use_gl();
+                unsafe {
+                    gl::Enable(gl::BLEND);
+                    // TODO this is certainly wrong
+                    gl::BlendFunc(gl::ONE, gl::ONE);
+                }
+                g.progs[3].set_mat4("model", &self.mat32(Some(&a)))?;
+                g.progs[3].set_mat4("view", &view)?;
+                g.progs[3].set_mat4("projection", &projection)?;
+                g.progs[3].set_vec3("sun_dir", &s)?;
+                g.progs[3].set_vec3("cam_pos", &(c.position * 1e6))?;
+                g.progs[3].set_vec3("pos", &(c.position * 1e6))?; // TODO
+                g.progs[3].set_float("Re", (self.r_equatorial * 1e6) as f32)?;
+                g.progs[3].set_float("Ra", ((self.r_equatorial + a.offset) * 1e6) as f32)?;
+                g.progs[3].set_float("Hr", a.scale_height_r as f32)?;
+                g.progs[3].set_vec3("betaR", &a.scatter_coeff_r)?;
+                g.progs[3].set_float("intensity", a.sun_intensity as f32)?;
+                g.meshes[0].draw();
+                unsafe { gl::Disable(gl::BLEND) }
+                g.progs[3].unuse_gl();
+            }
+        }
+
         Ok(())
     }
 }
@@ -151,7 +193,7 @@ impl Points {
     }
 
     fn update_points(&mut self) {
-        if self.points.len() == 0 {
+        if self.points.is_empty() {
             panic!("bruh");
         }
         unsafe {
@@ -162,7 +204,7 @@ impl Points {
             gl::BufferData(
                 gl::ARRAY_BUFFER,
                 std::mem::size_of_val(self.points.as_slice()) as isize,
-                std::mem::transmute(self.points.as_ptr()), // This is hella sketchy
+                self.points.as_ptr() as *const _,
                 // Might be nice to be able to set this
                 gl::DYNAMIC_DRAW,
             );
@@ -193,7 +235,6 @@ impl Drawable for Points {
         g.progs[2].set_mat4("model", &model)?;
         g.progs[2].set_mat4("view", &view)?;
         g.progs[2].set_mat4("projection", &projection)?;
-        // TODO convert color hex to a vector
         let comp: [u8; 4] = unsafe { std::mem::transmute(self.color) };
         let v = 0xFF as f32;
         let color = na::Vector4::new(
@@ -256,14 +297,3 @@ impl Drawable for Text {
         Ok(())
     }
 }
-
-// TODO
-// Text
-// ^ Color (with transparency)
-// There is no way around using a vertex buffer
-// Points/Lines -> Point, Orbital Elements, Grid
-// ^ should support thickness, color (with transparency)
-// ^ should also look nice (not ugly)
-// Vectors -> Axes
-// ^ Thickness, color (no need for transparency)
-// Mesh (only once lighting/rendering work is nearly done, stretch goal)

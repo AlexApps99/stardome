@@ -38,6 +38,10 @@ impl Graphics {
                 &Shader::vertex(include_bytes!("../glsl/simple.vert.glsl"))?,
                 &Shader::frag(include_bytes!("../glsl/simple.frag.glsl"))?,
             ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/atmosphere.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/atmosphere.frag.glsl"))?,
+            ])?,
         ];
         progs[0].use_gl();
         progs[0].set_int("texture1", 0)?;
@@ -79,7 +83,7 @@ impl Graphics {
         unsafe { gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT) }
     }
 
-    pub fn draw_skybox(&mut self, cam: &camera::Camera) {
+    pub fn draw_skybox(&mut self, cam: &camera::Camera, sun: &na::Vector3<f64>) {
         // Cubemap
         unsafe {
             gl::DepthFunc(gl::LEQUAL);
@@ -88,78 +92,14 @@ impl Graphics {
         let _ = self.progs[1].set_mat4("view", &cam.rot_matrix());
         let projection = cam.projection_matrix(self.aspect_ratio());
         let _ = self.progs[1].set_mat4("projection", &projection);
+        let _ = self.progs[1].set_vec3("sun_dir", &na::convert(sun.normalize()));
+        let _ = self.progs[1].set_float("sun_angle_rad", (695.700 / sun.magnitude()).atan() as f32);
         self.cubemap.bind(0);
         self.meshes[1].draw();
         self.progs[1].unuse_gl();
         unsafe {
             gl::DepthFunc(gl::LESS);
         }
-    }
-
-    pub fn frame(
-        &mut self,
-        cam: &camera::Camera,
-        elapsed_secs: f32,
-    ) -> Result<(), crate::BoxError> {
-        let tw = elapsed_secs as f64 * 0.1;
-        //unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE); }
-        let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
-        let tf = sputils::gcrs_to_itrs(
-            djmjd0,
-            tt + tw,
-            date,
-            tut + tw,
-            0.093343 * 4.848136811095359935899141e-6,
-            0.289699 * 4.848136811095359935899141e-6,
-            0.115 * (4.848136811095359935899141e-6 / 1e3),
-            0.153 * (4.848136811095359935899141e-6 / 1e3),
-        );
-
-        // TODO THIS IS ASS MOON CODE >:/
-        let mut jpl = sputils::eph::JPL::new().unwrap();
-        let (mut pos, lib) = jpl.moon(sputils::time::TT(djmjd0, tt + tw).into_tdb(0.0));
-        pos.0 *= 149597.8707; // From AU to megameters
-
-        let mut model: na::Matrix4<f32> =
-            na::convert::<na::Matrix3<f64>, na::Matrix3<f32>>(tf.transpose()).fixed_resize(0.0);
-        model.m44 = 1.0;
-        // Oblate spheroid
-        model *= na::Matrix4::new_scaling(6.37814);
-
-        // Camera parameters
-        let view = cam.view_matrix();
-        let projection = cam.projection_matrix(self.aspect_ratio());
-
-        self.progs[0].use_gl();
-        self.progs[0].set_mat4("model", &model)?;
-        self.progs[0].set_mat4("view", &view)?;
-        self.progs[0].set_mat4("projection", &projection)?;
-
-        self.textures[0].bind(0);
-        self.textures[1].bind(1);
-        self.meshes[0].draw();
-        // Drawing the moon
-        model = na::convert::<na::Matrix4<f64>, na::Matrix4<f32>>(
-            na::Matrix4::new_translation(&pos.0) * na::Matrix4::new_scaling(1.7371),
-        );
-        self.progs[0].set_mat4("model", &model)?;
-        self.textures[2].bind(0);
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE1);
-            gl::BindTexture(gl::TEXTURE_2D, 0);
-        }
-        self.meshes[0].draw();
-        // TODO Bogus sun should be drawn as flat texture
-        // drawn onto skybox (don't draw it at far coordinates due to FP issues)
-        //model = na::Matrix4::new_translation(&na::Vector3::new(147120.0, 0.0, 0.0)) * na::Matrix4::new_scaling(696.34);
-        //self.progs[0].set_mat4("model", &model)?;
-        //self.meshes[0].draw();
-
-        self.progs[0].unuse_gl();
-
-        self.draw_skybox(&cam);
-
-        Ok(())
     }
 }
 

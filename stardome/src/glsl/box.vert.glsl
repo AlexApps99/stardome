@@ -8,7 +8,6 @@ uniform mat4 view;
 
 void main() {
     TexCoords = aPos;
-    // Fix the shenanigans
-    vec4 pos = projection * view * vec4(aPos.zxy, 1.0);
-    gl_Position = pos.xyww;
+    vec4 pos = projection * view * vec4(aPos, 1.0);
+    gl_Position = pos.xyww; // Z value always 1
 }

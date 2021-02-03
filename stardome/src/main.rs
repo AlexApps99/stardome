@@ -15,34 +15,9 @@ fn rows_to_mat3(r: &[[f64; 3]; 3]) -> na::Matrix3<f64> {
     })
 }
 
-fn get_mat_old(djmjd0: f64, tt: f64, date: f64, tut: f64, tw: f64) -> na::Matrix4<f64> {
-    let tf = sputils::gcrs_to_itrs(
-        djmjd0,
-        tt + tw,
-        date,
-        tut + tw,
-        0.093343 * 4.848136811095359935899141e-6,
-        0.289699 * 4.848136811095359935899141e-6,
-        0.115 * (4.848136811095359935899141e-6 / 1e3),
-        0.153 * (4.848136811095359935899141e-6 / 1e3),
-    );
-    mat3_to_mat4(&tf.transpose())
-}
-
 fn get_mat(et: f64) -> na::Matrix4<f64> {
     let m = rspice::pxform("ITRF93", "J2000", et);
     mat3_to_mat4(&rows_to_mat3(&m))
-}
-
-fn get_moon_mat_old(
-    jpl: &mut sputils::eph::JPL,
-    djmjd0: f64,
-    tt: f64,
-    tw: f64,
-) -> na::Matrix4<f64> {
-    let (mut pos, lib) = jpl.moon(sputils::time::TT(djmjd0, tt + tw).into_tdb(0.0));
-    pos.0 *= 149597.8707; // From AU to megameters
-    na::Matrix4::new_translation(&pos.0)
 }
 
 fn get_moon_pos(et: f64) -> na::Vector3<f64> {
@@ -93,18 +68,27 @@ fn main() {
     let et = rspice::str2et("2021-01-18T12:00:00");
 
     let mut earth = stardome::Planet {
-        r_equatorial: 6.37814,
-        r_polar: 6.37814,
+        r_equatorial: 6.3781,
+        r_polar: 6.3568,
         lighting: true,
         texture: stardome::Texture::open("img/gen/earth.png").unwrap(),
-        atm: None,
+        atm: Some(stardome::Atmosphere {
+            offset: 0.06,
+            sun_intensity: 20.0,
+            scale_height_r: 7994.0,
+            scatter_coeff_r: na::Vector3::new(3.8e-6, 13.5e-6, 33.1e-6),
+            scale_height_m: 1200.0,
+            scatter_coeff_m: na::Vector3::from_element(21e-6),
+            asymmetry_m: 0.76,
+        }),
         clouds: None,
         tf: get_mat(et),
     };
 
+    // TODO spice provides constants get it from them
     let mut moon = stardome::Planet {
-        r_equatorial: 1.7371,
-        r_polar: 1.7371,
+        r_equatorial: 1.7381,
+        r_polar: 1.736,
         lighting: true,
         texture: stardome::Texture::open("img/gen/moon.png").unwrap(),
         atm: None,
@@ -125,6 +109,7 @@ fn main() {
     };
 
     let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, vec![na::Vector3::zeros(); 2]);
+    let mut sun_line = stardome::Points::new(0xFF8000FF, 4.0, true, vec![na::Vector3::zeros(); 2]);
     let mut iss = stardome::Points::new(0xFF00FF80, 8.0, false, vec![na::Vector3::zeros()]);
     let mut orbit = stardome::Points::new(0x00FF0080, 1.0, true, get_iss_line(et));
     loop {
@@ -139,6 +124,9 @@ fn main() {
                 get_moon_pos(et + tw),
             ));
         });
+        sun_line.modify_points(|p| {
+            p[1] = sd.get_sun_dir() * 100.0;
+        });
         iss.modify_points(|p| {
             p[0].copy_from(&na::convert::<na::Vector3<f64>, na::Vector3<f32>>(
                 get_iss_pos(et + tw),
@@ -151,10 +139,10 @@ fn main() {
         sd.draw(&mut orbit);
         sd.draw(&mut iss_label);
         sd.draw(&mut moon_label);
+        sd.draw(&mut sun_line);
 
         if sd
             .frame(|ui| {
-                // TODO put all code for stuff here
                 if win {
                     ui.show_demo_window(&mut win);
                 }

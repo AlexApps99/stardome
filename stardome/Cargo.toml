@@ -6,7 +6,7 @@ edition     = "2018"
 
 publish     = false
 description = "Planet visualization"
-repository  = "https://github.com/AlexApps99/stardome"
+repository  = "https://github.com/ZoussCity/stardome"
 
 [dependencies.gl]
 version     = "0.14.0"
@@ -30,9 +30,6 @@ version     = "0.23.1"
 
 [dependencies.sdl2]
 version     = "0.34.3"
-
-[dependencies.sputils]
-path        = "../sputils/"
 
 [dependencies.rspice]
 # not smart

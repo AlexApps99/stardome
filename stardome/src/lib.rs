@@ -2,6 +2,7 @@
 extern crate nalgebra as na;
 mod gfx;
 
+pub use gfx::drawable::Atmosphere;
 pub use gfx::drawable::Planet;
 pub use gfx::drawable::Points;
 pub use gfx::drawable::Text;
@@ -9,12 +10,6 @@ pub use gfx::texture::Texture;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type BoxResult<T> = Result<T, BoxError>;
-
-macro_rules! cstr {
-    ($s:expr) => {
-        unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(concat!($s, "\0").as_bytes()) }
-    };
-}
 
 pub struct StarDome {
     pub graphics: gfx::Graphics,
@@ -101,7 +96,7 @@ impl StarDome {
         //ui.show_demo_window(&mut true);
 
         f(&mut ui);
-        if self.text.len() > 0 {
+        if !self.text.is_empty() {
             let vc = std::mem::replace(&mut self.text, Vec::new());
             let tf =
                 self.cam.projection_matrix(self.graphics.aspect_ratio()) * self.cam.view_matrix();
@@ -109,7 +104,6 @@ impl StarDome {
             let sx = sx as f32;
             let sy = sy as f32;
             use imgui::WindowFlags;
-            // TODO make sure no styling (eg padding/window edge) gets in way
             imgui::Window::new(imgui::im_str!("Text"))
                 .flags(
                     WindowFlags::NO_MOVE
@@ -159,7 +153,7 @@ impl StarDome {
 
         //self.graphics
         //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
-        self.graphics.draw_skybox(&self.cam);
+        self.graphics.draw_skybox(&self.cam, &self.sun);
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
         self.imgui_gl.render(ui);
