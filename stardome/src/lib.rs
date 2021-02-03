@@ -2,6 +2,7 @@
 extern crate nalgebra as na;
 mod gfx;
 
+pub use gfx::drawable::Atmosphere;
 pub use gfx::drawable::Planet;
 pub use gfx::drawable::Points;
 pub use gfx::drawable::Text;
@@ -159,7 +160,7 @@ impl StarDome {
 
         //self.graphics
         //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
-        self.graphics.draw_skybox(&self.cam);
+        self.graphics.draw_skybox(&self.cam, &self.sun);
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
         self.imgui_gl.render(ui);

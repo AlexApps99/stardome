@@ -128,6 +128,12 @@ impl Program {
         }
         Ok(())
     }
+
+    pub fn set_float(&self, name: &str, f: f32) -> Result<(), std::ffi::NulError> {
+        let cstring = std::ffi::CString::new(name)?;
+        unsafe { gl::Uniform1f(gl::GetUniformLocation(self.0, cstring.as_ptr()), f) }
+        Ok(())
+    }
 }
 
 impl Drop for Program {
