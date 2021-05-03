@@ -12,24 +12,24 @@ repository  = "https://github.com/ZoussCity/stardome"
 version     = "0.14.0"
 
 [dependencies.image]
-version     = "0.23.12"
+version     = "0.23.14"
 default-features = false
 features    = ["png"]
 
 [dependencies.imgui]
-version     = "0.6.0"
+version     = "0.7.0"
 
 [dependencies.imgui-opengl-renderer]
-version     = "0.10.0"
+version     = "0.11.0"
 
 [dependencies.imgui-sdl2]
-version     = "0.13.0"
+version     = "0.14.0"
 
 [dependencies.nalgebra]
-version     = "0.23.1"
+version     = "0.26.2"
 
 [dependencies.sdl2]
-version     = "0.34.3"
+version     = "0.34.5"
 
 [dependencies.rspice]
 # not smart
