@@ -31,12 +31,12 @@ version     = "0.26.2"
 [dependencies.sdl2]
 version     = "0.34.5"
 
-[dependencies.rspice]
+[dev-dependencies.rspice]
 # not smart
 default-features = false
 path        = "../../cspice/rspice/"
 
-#[dependencies.sofa-sys]
+#[dev-dependencies.sofa-sys]
 #version     = "2020.7.21-beta.1"
 
 [features]

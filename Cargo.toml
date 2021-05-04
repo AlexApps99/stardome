@@ -1,6 +1,11 @@
 [workspace]
 
 members = [
-    "sputils",
+    #"sputils",
     "stardome",
 ]
+
+# hack to avoid:
+# wasm-ld: error: ~/Desktop/stardome/target/wasm32-unknown-emscripten/debug/deps/libinstant-f1684861bb8db0ef.rlib(instant-f1684861bb8db0ef.instant.aih9kv7j-cgu.2.rcgu.o): undefined symbol: now
+[patch.crates-io]
+instant = { git = "https://github.com/AlexApps99/instant" }

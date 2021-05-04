@@ -3,11 +3,6 @@
 use stardome::StarDome;
 extern crate nalgebra as na;
 
-#[cfg(target_os = "emscripten")]
-extern "C" {
-    pub fn emscripten_sleep(ms: u32);
-}
-
 fn mat3_to_mat4(m: &na::Matrix3<f64>) -> na::Matrix4<f64> {
     let mut m: na::Matrix4<f64> = m.fixed_resize(0.0);
     m.m44 = 1.0;
@@ -21,23 +16,39 @@ fn rows_to_mat3(r: &[[f64; 3]; 3]) -> na::Matrix3<f64> {
 }
 
 fn get_mat(et: f64) -> na::Matrix4<f64> {
-    na::Matrix4::identity()
+    let m = rspice::pxform("ITRF93", "J2000", et);
+    mat3_to_mat4(&rows_to_mat3(&m))
 }
 
 fn get_moon_pos(et: f64) -> na::Vector3<f64> {
-    na::Vector3::new(70.,0.,0.)
+    // This is km
+    let (t, _) = rspice::spkpos("MOON", et, "J2000", "NONE", "EARTH");
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
 }
 
 fn get_moon_mat(et: f64) -> na::Matrix4<f64> {
-    na::Matrix4::identity()
+    let m = rspice::pxform("MOON_ME", "J2000", et);
+    mat3_to_mat4(&rows_to_mat3(&m)).append_translation(&get_moon_pos(et))
 }
 
 fn get_iss_pos(et: f64) -> na::Vector3<f64> {
-    na::Vector3::new(7.0,0.,0.)
+    // This is km
+    let (t, _) = rspice::spkgps(-6969, et, "J2000", 399);
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
+}
+
+fn get_iss_line(et: f64) -> Vec<na::Vector3<f32>> {
+    let mut v = Vec::with_capacity(60 * 60);
+    for x in -(60 * 60)..(60 * 60) {
+        v.push(na::convert(get_iss_pos(et + (x as f64))))
+    }
+    v
 }
 
 fn get_sun_pos(et: f64) -> na::Vector3<f64> {
-    na::Vector3::new(149597.87,0.,0.)
+    // This is km
+    let (t, _) = rspice::spkpos("SUN", et, "J2000", "NONE", "EARTH");
+    na::Vector3::new(t[0], t[1], t[2]) / 1000.0
 }
 
 fn main() {
@@ -46,6 +57,7 @@ fn main() {
     // Use error checking version not hacky one
     // Verify position of everything (sun and moon) by looking at eclipse
     // Oh and stars
+    rspice::furnsh("../cspice/kernels/all.tm");
     use imgui::im_str;
     let mut sd = StarDome::new().unwrap();
 
@@ -58,7 +70,7 @@ fn main() {
 
     let beninging = std::time::Instant::now();
     //let (djmjd0, tt, date, tut) = sputils::get_mjd(2020, 12, 10, 8, 0, 0.0, -0.2).unwrap();
-    let et = 0.0;
+    let et = rspice::str2et("2021-01-18T12:00:00");
 
     let mut earth = stardome::Planet {
         r_equatorial: 6.3781,
@@ -104,7 +116,7 @@ fn main() {
     let mut test_line = stardome::Points::new(0xABCDEFFF, 4.0, true, vec![na::Vector3::zeros(); 2]);
     let mut sun_line = stardome::Points::new(0xFF8000FF, 4.0, true, vec![na::Vector3::zeros(); 2]);
     let mut iss = stardome::Points::new(0xFF00FF80, 8.0, false, vec![na::Vector3::zeros()]);
-
+    let mut orbit = stardome::Points::new(0x00FF0080, 1.0, true, get_iss_line(et));
     loop {
         sd.sun = get_sun_pos(et);
         let tw = beninging.elapsed().as_secs_f64() * 60.0;
@@ -129,7 +141,7 @@ fn main() {
         moon_label.position = na::convert(get_moon_pos(et + tw));
         sd.draw(&mut test_line);
         sd.draw(&mut iss);
-
+        sd.draw(&mut orbit);
         sd.draw(&mut iss_label);
         sd.draw(&mut moon_label);
         sd.draw(&mut sun_line);
@@ -177,9 +189,5 @@ fn main() {
         sd.cam.set_fov(fov.to_degrees());
         earth.tf = get_mat(et + tw);
         moon.tf = get_moon_mat(et + tw);
-        #[cfg(target_os = "emscripten")]
-        unsafe {
-            emscripten_sleep(17);
-        }
     }
 }
