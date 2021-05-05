@@ -17,9 +17,13 @@ pub struct StarDome {
     pub sun: na::Vector3<f64>,
     begin: std::time::Instant,
     frame_t: std::time::Instant,
+    #[cfg(not(target_os = "emscripten"))]
     imgui: imgui::Context,
+    #[cfg(not(target_os = "emscripten"))]
     imgui_sdl: imgui_sdl2::ImguiSdl2,
+    #[cfg(not(target_os = "emscripten"))]
     imgui_gl: imgui_opengl_renderer::Renderer,
+    #[cfg(not(target_os = "emscripten"))]
     text: Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
 }
 
@@ -27,9 +31,13 @@ impl StarDome {
     pub fn new() -> BoxResult<Self> {
         let t = std::time::Instant::now();
         let graphics = gfx::Graphics::new()?;
+        #[cfg(not(target_os = "emscripten"))]
         let mut imgui = imgui::Context::create();
+        #[cfg(not(target_os = "emscripten"))]
         imgui.set_ini_filename(None);
+        #[cfg(not(target_os = "emscripten"))]
         let imgui_sdl = imgui_sdl2::ImguiSdl2::new(&mut imgui, &graphics.libs.window);
+        #[cfg(not(target_os = "emscripten"))]
         let imgui_gl = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
             graphics.libs.video.gl_get_proc_address(s) as _
         });
@@ -45,9 +53,13 @@ impl StarDome {
             sun: na::Vector3::zeros(), // When it's zeros lighting is disabled
             begin: t,
             frame_t: t,
+            #[cfg(not(target_os = "emscripten"))]
             imgui,
+            #[cfg(not(target_os = "emscripten"))]
             imgui_sdl,
+            #[cfg(not(target_os = "emscripten"))]
             imgui_gl,
+            #[cfg(not(target_os = "emscripten"))]
             text: Vec::new(),
         };
         s.graphics.libs.window.show();
@@ -61,8 +73,11 @@ impl StarDome {
 
     pub fn draw<T: gfx::drawable::Drawable>(&mut self, d: &mut T) {
         let s = self.get_sun_dir();
+        #[cfg(not(target_os = "emscripten"))]
         d.draw(&mut self.graphics, &self.cam, s, &mut self.text)
             .unwrap();
+        #[cfg(target_os = "emscripten")]
+        d.draw(&mut self.graphics, &self.cam, s).unwrap();
     }
 
     pub fn frame<F>(&mut self, mut f: F) -> BoxResult<std::time::Duration>
@@ -74,7 +89,9 @@ impl StarDome {
         let elapsed = self.frame_t.duration_since(last_frame);
 
         while let Some(e) = self.graphics.libs.pump.poll_event() {
+            #[cfg(not(target_os = "emscripten"))]
             self.imgui_sdl.handle_event(&mut self.imgui, &e);
+            #[cfg(not(target_os = "emscripten"))]
             if self.imgui_sdl.ignore_event(&e) {
                 continue;
             }
@@ -86,18 +103,23 @@ impl StarDome {
             }
         }
 
+        #[cfg(not(target_os = "emscripten"))]
         self.imgui_sdl.prepare_frame(
             self.imgui.io_mut(),
             &self.graphics.libs.window,
             &self.graphics.libs.pump.mouse_state(),
         );
+        #[cfg(not(target_os = "emscripten"))]
         self.imgui.io_mut().update_delta_time(elapsed);
+        #[cfg(not(target_os = "emscripten"))]
         let mut ui = self.imgui.frame();
         //ui.show_demo_window(&mut true);
 
+        #[cfg(not(target_os = "emscripten"))]
         f(&mut ui);
+        #[cfg(not(target_os = "emscripten"))]
         if !self.text.is_empty() {
-            let vc = std::mem::replace(&mut self.text, Vec::new());
+            let vc = std::mem::take(&mut self.text);
             let tf =
                 self.cam.projection_matrix(self.graphics.aspect_ratio()) * self.cam.view_matrix();
             let (sx, sy) = self.graphics.libs.window.size();
@@ -154,8 +176,10 @@ impl StarDome {
         //self.graphics
         //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
         self.graphics.draw_skybox(&self.cam, &self.sun);
+        #[cfg(not(target_os = "emscripten"))]
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
+        #[cfg(not(target_os = "emscripten"))]
         self.imgui_gl.render(ui);
         self.graphics.handle_frame();
         Ok(self.frame_t.elapsed())

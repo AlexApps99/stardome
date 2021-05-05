@@ -3,12 +3,14 @@ rustflags = [
     "-C", "link-arg=-sUSE_SDL=2",
 	"-C", "link-arg=-sMIN_WEBGL_VERSION=2",
 	"-C", "link-arg=-sMAX_WEBGL_VERSION=2",
-	"-C", "link-arg=-sASYNCIFY=1",
-	#"-C", "link-arg=--preload-file",
-	#"-C", "link-arg=???",
+	"-C", "link-arg=--preload-file",
+	"-C", "link-arg=img/gen/earth.png",
+	"-C", "link-arg=--preload-file",
+	"-C", "link-arg=img/gen/milky_way.png",
 	"-C", "panic=abort",
 ]
-runner = ["python3", "-c", "import webbrowser;webbrowser.open('http://0.0.0.0:8000/');from http.server import test,SimpleHTTPRequestHandler;test(SimpleHTTPRequestHandler)"]
+#runner = ["python3", "-c", "import webbrowser;webbrowser.open('http://0.0.0.0:8000/');from http.server import test,SimpleHTTPRequestHandler;test(SimpleHTTPRequestHandler)"]
+runner = ["python3", "web.py"]
 
 [alias]
 embuild = "build --target wasm32-unknown-emscripten"

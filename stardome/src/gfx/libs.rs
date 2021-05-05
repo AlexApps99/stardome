@@ -14,11 +14,18 @@ impl GraphicsLibs {
         let pump = sdl.event_pump()?;
         let video = sdl.video()?;
         let attr = video.gl_attr();
+        #[cfg(target_os = "emscripten")]
+        attr.set_context_version(3, 0);
+        #[cfg(not(target_os = "emscripten"))]
         attr.set_context_version(3, 3);
+        #[cfg(target_os = "emscripten")]
+        attr.set_context_profile(sdl2::video::GLProfile::GLES);
+        #[cfg(not(target_os = "emscripten"))]
         attr.set_context_profile(sdl2::video::GLProfile::Core);
         attr.set_accelerated_visual(true);
         attr.set_multisample_buffers(1);
         attr.set_multisample_samples(4);
+        #[cfg(not(target_os = "emscripten"))]
         attr.set_context_flags().forward_compatible().debug().set();
         let window = video
             .window("Stardome", 960, 540)
@@ -30,6 +37,7 @@ impl GraphicsLibs {
 
         let ctx = window.gl_create_context()?;
 
+        #[cfg(not(target_os = "emscripten"))]
         if video
             .gl_set_swap_interval(sdl2::video::SwapInterval::LateSwapTearing)
             .is_err()
@@ -39,9 +47,12 @@ impl GraphicsLibs {
 
         gl::load_with(|s| video.gl_get_proc_address(s) as *const _);
         unsafe {
+            #[cfg(not(target_os = "emscripten"))]
             let mut flags: i32 = 0;
+            #[cfg(not(target_os = "emscripten"))]
             gl::GetIntegerv(gl::CONTEXT_FLAGS, &mut flags);
             // TODO check extension is loaded
+            #[cfg(not(target_os = "emscripten"))]
             if ((flags & gl::CONTEXT_FLAG_DEBUG_BIT as i32) != 0)
                 && gl::DebugMessageCallback::is_loaded()
             {
@@ -63,10 +74,15 @@ impl GraphicsLibs {
             gl::Viewport(0, 0, 960, 540);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
+            #[cfg(not(target_os = "emscripten"))]
             gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
+            #[cfg(not(target_os = "emscripten"))]
             gl::Enable(gl::MULTISAMPLE);
+            #[cfg(not(target_os = "emscripten"))]
             gl::Enable(gl::LINE_SMOOTH);
+            #[cfg(not(target_os = "emscripten"))]
             gl::Disable(gl::PROGRAM_POINT_SIZE);
+            #[cfg(not(target_os = "emscripten"))]
             gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         }
 
@@ -87,6 +103,7 @@ impl Drop for GraphicsLibs {
 }
 
 // As this will be a "library" in a sense, using log! is more smart
+#[cfg(not(target_os = "emscripten"))]
 extern "system" fn gl_debug_message_callback(
     source: u32,
     t: u32,

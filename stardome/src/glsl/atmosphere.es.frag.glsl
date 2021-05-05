@@ -1,7 +1,7 @@
-#version 330 core
+#version 300 es
+precision highp float;
 out vec4 FragColor;
 
-in vec4 gl_FragCoord;
 in vec3 FragPos;
 
 // Based on https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<meta charset="utf-8"/>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+        <title>Stardome</title>
+        <style>
+            html, body {
+                overflow: hidden;
+                margin: 0;
+                padding: 0;
+                background-color: black;
+            }
+
+            canvas#canvas {
+                display: block;
+                width: 100vw;
+                height: 100vh;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: -webkit-crisp-edges;
+                image-rendering: pixelated;
+                image-rendering: crisp-edges;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                touch-action: none;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+		<script>
+			var Module = {};
+			var __cargo_web = {};
+			Object.defineProperty(Module, "canvas", {
+				get: function () {
+					if (__cargo_web.canvas) {
+						return __cargo_web.canvas;
+					}
+					const canvas = document.getElementById("canvas");
+					canvas.addEventListener("contextmenu", event => event.preventDefault());
+					__cargo_web.canvas = canvas;
+					return canvas;
+				}
+			});
+		</script>
+        <script src="stardome.js"></script>
+    </body>
+</html>

@@ -2,3 +2,7 @@
 /img/gen/
 /img/src/
 /Cargo.lock
+/web/stardome.data
+/web/stardome.js
+/web/stardome.wasm
+/web/stardome.wasm.map

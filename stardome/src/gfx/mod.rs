@@ -25,6 +25,7 @@ impl Graphics {
             texture::Texture::open("img/gen/moon_albedo.png")?,
         */];
         let cubemap = texture::Cubemap::open("img/gen/milky_way.png")?;
+        #[cfg(not(target_os = "emscripten"))]
         let progs = vec![
             Program::new(&[
                 &Shader::vertex(include_bytes!("../glsl/planet.vert.glsl"))?,
@@ -41,6 +42,25 @@ impl Graphics {
             Program::new(&[
                 &Shader::vertex(include_bytes!("../glsl/atmosphere.vert.glsl"))?,
                 &Shader::frag(include_bytes!("../glsl/atmosphere.frag.glsl"))?,
+            ])?,
+        ];
+        #[cfg(target_os = "emscripten")]
+        let progs = vec![
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/planet.es.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/planet.es.frag.glsl"))?,
+            ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/box.es.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/box.es.frag.glsl"))?,
+            ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/simple.es.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/simple.es.frag.glsl"))?,
+            ])?,
+            Program::new(&[
+                &Shader::vertex(include_bytes!("../glsl/atmosphere.es.vert.glsl"))?,
+                &Shader::frag(include_bytes!("../glsl/atmosphere.es.frag.glsl"))?,
             ])?,
         ];
         progs[0].use_gl();
@@ -68,12 +88,10 @@ impl Graphics {
         if let sdl2::event::Event::Window {
             timestamp: _,
             window_id: _,
-            win_event,
+            win_event: sdl2::event::WindowEvent::SizeChanged(x, y),
         } = event
         {
-            if let sdl2::event::WindowEvent::SizeChanged(x, y) = win_event {
-                unsafe { gl::Viewport(0, 0, *x, *y) }
-            }
+            unsafe { gl::Viewport(0, 0, *x, *y) }
         }
         false
     }
