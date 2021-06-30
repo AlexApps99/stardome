@@ -46,8 +46,10 @@ impl Drop for Shader {
 }
 
 #[repr(transparent)]
+#[derive(Debug)]
 pub struct Program(pub u32);
 
+// TODO cache uniforms, and regurgitate them later
 impl Program {
     pub fn new(shaders: &[&Shader]) -> Result<Self, std::io::Error> {
         unsafe {
@@ -92,15 +94,17 @@ impl Program {
     }
 
     pub fn set_mat4(&self, name: &str, m: &na::Matrix4<f32>) -> Result<(), std::ffi::NulError> {
+        println!("got here");
         let cstring = std::ffi::CString::new(name)?;
         unsafe {
             gl::UniformMatrix4fv(
-                gl::GetUniformLocation(self.0, cstring.as_ptr()),
+                gl::GetUniformLocation(*&self.0, cstring.as_ptr()),
                 1,
                 gl::FALSE,
                 m.as_slice().as_ptr(),
             )
         }
+        println!("good");
         Ok(())
     }
 
@@ -138,5 +142,6 @@ impl Program {
 impl Drop for Program {
     fn drop(&mut self) {
         unsafe { gl::DeleteProgram(self.0) }
+        eprintln!("Goodbye to {}", self.0);
     }
 }

@@ -4,6 +4,8 @@ pub struct GraphicsLibs {
     pub sdl: sdl2::Sdl,
     pub pump: sdl2::EventPump,
     pub video: sdl2::VideoSubsystem,
+    // window is the only object that is PER window
+    // everything else, only one is needed for the program
     pub window: sdl2::video::Window,
     pub ctx: sdl2::video::GLContext,
 }
@@ -14,19 +16,21 @@ impl GraphicsLibs {
         let pump = sdl.event_pump()?;
         let video = sdl.video()?;
         let attr = video.gl_attr();
-        #[cfg(target_os = "emscripten")]
+        #[cfg(any(target_os = "emscripten", feature = "gles"))]
         attr.set_context_version(3, 0);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         attr.set_context_version(3, 3);
-        #[cfg(target_os = "emscripten")]
+        #[cfg(any(target_os = "emscripten", feature = "gles"))]
         attr.set_context_profile(sdl2::video::GLProfile::GLES);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         attr.set_context_profile(sdl2::video::GLProfile::Core);
         attr.set_accelerated_visual(true);
         attr.set_multisample_buffers(1);
         attr.set_multisample_samples(4);
-        #[cfg(not(target_os = "emscripten"))]
-        attr.set_context_flags().forward_compatible().debug().set();
+        #[cfg(all(not(target_os = "emscripten"), feature = "gles"))]
+        attr.set_context_flags().debug().set();
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
+        attr.set_context_flags().debug().forward_compatible().set();
         let window = video
             .window("Stardome", 960, 540)
             .resizable()
@@ -74,15 +78,15 @@ impl GraphicsLibs {
             gl::Viewport(0, 0, 960, 540);
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
             gl::Enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
             gl::Enable(gl::MULTISAMPLE);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
             gl::Enable(gl::LINE_SMOOTH);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
             gl::Disable(gl::PROGRAM_POINT_SIZE);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
             gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         }
 

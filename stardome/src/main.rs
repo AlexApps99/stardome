@@ -84,7 +84,7 @@ pub unsafe extern "C" fn loop_stuff(state: *mut std::ffi::c_void) {
     let state = &mut *(state as *mut State);
     state.sd.draw(&mut state.earth);
     state.sd.draw(&mut state.iss_label);
-    state.sd.draw(&mut state.sun_line);
+    //state.sd.draw(&mut state.sun_line);
 
     let mut rx = state.sd.cam.rx;
     let mut ry = state.sd.cam.ry;

@@ -25,7 +25,7 @@ impl Graphics {
             texture::Texture::open("img/gen/moon_albedo.png")?,
         */];
         let cubemap = texture::Cubemap::open("img/gen/milky_way.png")?;
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(not(any(target_os = "emscripten", feature = "gles")))]
         let progs = vec![
             Program::new(&[
                 &Shader::vertex(include_bytes!("../glsl/planet.vert.glsl"))?,
@@ -44,7 +44,7 @@ impl Graphics {
                 &Shader::frag(include_bytes!("../glsl/atmosphere.frag.glsl"))?,
             ])?,
         ];
-        #[cfg(target_os = "emscripten")]
+        #[cfg(any(target_os = "emscripten", feature = "gles"))]
         let progs = vec![
             Program::new(&[
                 &Shader::vertex(include_bytes!("../glsl/planet.es.vert.glsl"))?,

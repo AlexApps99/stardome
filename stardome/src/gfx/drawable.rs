@@ -10,7 +10,7 @@ pub trait Drawable {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         s: na::Vector3<f32>,
-        #[cfg(not(target_os = "emscripten"))] t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))] t: &mut Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
     ) -> Result<(), std::ffi::NulError>;
 }
 
@@ -82,7 +82,7 @@ impl Drawable for Planet {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         s: na::Vector3<f32>,
-        #[cfg(not(target_os = "emscripten"))] _t: &mut Vec<(
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))] _t: &mut Vec<(
             na::Vector3<f64>,
             u32,
             imgui::ImString,
@@ -91,7 +91,9 @@ impl Drawable for Planet {
         let view = c.view_matrix();
         let projection = c.projection_matrix(g.aspect_ratio());
         g.progs[0].use_gl();
+        println!("{:?}", g.progs);
         g.progs[0].set_mat4("model", &self.mat32(None))?;
+        println!("{:?}", g.progs);
         g.progs[0].set_mat4("view", &view)?;
         g.progs[0].set_mat4("projection", &projection)?;
         let z = na::Vector3::zeros();
@@ -228,7 +230,7 @@ impl Drawable for Points {
         g: &mut super::Graphics,
         c: &super::camera::Camera,
         _s: na::Vector3<f32>,
-        #[cfg(not(target_os = "emscripten"))] _t: &mut Vec<(
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))] _t: &mut Vec<(
             na::Vector3<f64>,
             u32,
             imgui::ImString,
@@ -290,7 +292,7 @@ pub struct Text {
 }
 
 impl Drawable for Text {
-    #[cfg(not(target_os = "emscripten"))]
+    #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
     fn draw(
         &mut self,
         g: &mut super::Graphics,
@@ -306,7 +308,7 @@ impl Drawable for Text {
         Ok(())
     }
 
-    #[cfg(target_os = "emscripten")]
+    #[cfg(any(target_os = "emscripten", feature = "gles"))]
     fn draw(
         &mut self,
         g: &mut super::Graphics,

@@ -1,3 +1,4 @@
+//! TODO use `libpng` or `libpng-sys` or `SDL2_image`, also `freetype`, `SDL2_ttf`
 //! Textures
 
 fn into_v8(v: Vec<u16>) -> Vec<u8> {

@@ -17,13 +17,13 @@ pub struct StarDome {
     pub sun: na::Vector3<f64>,
     begin: std::time::Instant,
     frame_t: std::time::Instant,
-    #[cfg(not(target_os = "emscripten"))]
+    #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
     imgui: imgui::Context,
-    #[cfg(not(target_os = "emscripten"))]
+    #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
     imgui_sdl: imgui_sdl2::ImguiSdl2,
-    #[cfg(not(target_os = "emscripten"))]
+    #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
     imgui_gl: imgui_opengl_renderer::Renderer,
-    #[cfg(not(target_os = "emscripten"))]
+    #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
     text: Vec<(na::Vector3<f64>, u32, imgui::ImString)>,
 }
 
@@ -31,13 +31,13 @@ impl StarDome {
     pub fn new() -> BoxResult<Self> {
         let t = std::time::Instant::now();
         let graphics = gfx::Graphics::new()?;
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         let mut imgui = imgui::Context::create();
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         imgui.set_ini_filename(None);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         let imgui_sdl = imgui_sdl2::ImguiSdl2::new(&mut imgui, &graphics.libs.window);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         let imgui_gl = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
             graphics.libs.video.gl_get_proc_address(s) as _
         });
@@ -53,13 +53,13 @@ impl StarDome {
             sun: na::Vector3::zeros(), // When it's zeros lighting is disabled
             begin: t,
             frame_t: t,
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             imgui,
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             imgui_sdl,
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             imgui_gl,
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             text: Vec::new(),
         };
         s.graphics.libs.window.show();
@@ -73,11 +73,13 @@ impl StarDome {
 
     pub fn draw<T: gfx::drawable::Drawable>(&mut self, d: &mut T) {
         let s = self.get_sun_dir();
-        #[cfg(not(target_os = "emscripten"))]
+        println!("Drawing something");
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         d.draw(&mut self.graphics, &self.cam, s, &mut self.text)
             .unwrap();
-        #[cfg(target_os = "emscripten")]
+        #[cfg(any(target_os = "emscripten", feature = "gles"))]
         d.draw(&mut self.graphics, &self.cam, s).unwrap();
+        println!("Drawn");
     }
 
     pub fn frame<F>(&mut self, mut f: F) -> BoxResult<std::time::Duration>
@@ -87,11 +89,12 @@ impl StarDome {
         let last_frame = self.frame_t;
         self.frame_t = std::time::Instant::now();
         let elapsed = self.frame_t.duration_since(last_frame);
+        println!("Hell");
 
         while let Some(e) = self.graphics.libs.pump.poll_event() {
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             self.imgui_sdl.handle_event(&mut self.imgui, &e);
-            #[cfg(not(target_os = "emscripten"))]
+            #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
             if self.imgui_sdl.ignore_event(&e) {
                 continue;
             }
@@ -103,21 +106,21 @@ impl StarDome {
             }
         }
 
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         self.imgui_sdl.prepare_frame(
             self.imgui.io_mut(),
             &self.graphics.libs.window,
             &self.graphics.libs.pump.mouse_state(),
         );
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         self.imgui.io_mut().update_delta_time(elapsed);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         let mut ui = self.imgui.frame();
         //ui.show_demo_window(&mut true);
 
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         f(&mut ui);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         if !self.text.is_empty() {
             let vc = std::mem::take(&mut self.text);
             let tf =
@@ -176,10 +179,10 @@ impl StarDome {
         //self.graphics
         //    .frame(&self.cam, self.begin.elapsed().as_secs_f32())?;
         self.graphics.draw_skybox(&self.cam, &self.sun);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         self.imgui_sdl
             .prepare_render(&ui, &self.graphics.libs.window);
-        #[cfg(not(target_os = "emscripten"))]
+        #[cfg(all(not(target_os = "emscripten"), not(feature = "gles")))]
         self.imgui_gl.render(ui);
         self.graphics.handle_frame();
         Ok(self.frame_t.elapsed())
